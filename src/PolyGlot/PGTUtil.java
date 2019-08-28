@@ -20,18 +20,14 @@
 
 package PolyGlot;
 
-import PolyGlot.CustomControls.InfoBox;
-import PolyGlot.Screens.*;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.Image;
 import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.Window;
 import java.io.IOException;
 import java.util.Map;
-import javax.swing.ImageIcon;
 
 /**
  * This contains various constant vales in PolyGlot
@@ -379,8 +375,7 @@ public class PGTUtil {
         try {
             tmpFont = PFontHandler.getMenuFont();
         } catch (IOException e) {
-            InfoBox.error("PolyGlot Load Error", "Unable to load default button font.", null);
-            IOHandler.writeErrorLog(e, "Initilization error (PGTUtil)");
+            System.out.println("WARNING: Initilization error (PGTUtil)");
             tmpFont = javax.swing.UIManager.getDefaults().getFont("Label.font");
         }
     }

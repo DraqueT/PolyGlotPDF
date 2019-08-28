@@ -26,7 +26,6 @@ import PolyGlot.PFontHandler;
 import PolyGlot.PGTUtil;
 import java.awt.Font;
 import java.awt.FontFormatException;
-import java.awt.Label;
 import java.awt.font.TextAttribute;
 import java.io.File;
 import java.io.IOException;
@@ -815,7 +814,6 @@ public class PropertiesManager {
                 cachedLocalFont = IOHandler.getByteArrayFromFile(updatedLocalFont);
             }
         } catch (Exception e) {
-            IOHandler.writeErrorLog(e);
             throw new Exception("Unable to refresh fonts: " + e.getLocalizedMessage());
         }
     }

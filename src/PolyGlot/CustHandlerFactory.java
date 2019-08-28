@@ -24,7 +24,6 @@ import PolyGlot.Nodes.DeclensionGenTransform;
 import PolyGlot.Nodes.DeclensionGenRule;
 import PolyGlot.Nodes.ConWord;
 import PolyGlot.Nodes.PronunciationNode;
-import PolyGlot.Nodes.LogoNode;
 import PolyGlot.Nodes.DeclensionNode;
 import PolyGlot.Nodes.FamNode;
 import PolyGlot.Nodes.TypeNode;
@@ -76,18 +75,20 @@ public class CustHandlerFactory {
         doc = dBuilder.parse(iStream);
         doc.getDocumentElement().normalize();
 
-        // test for version number in pgd file, set to 0 if none found (pre 0.6)
         Node versionNode = doc.getDocumentElement().getElementsByTagName(PGTUtil.pgVersionXID).item(0);
         String versionNumber = versionNode == null ? "0" : versionNode.getTextContent();
         int fileVersionHierarchy = core.getVersionHierarchy(versionNumber);
         
-        if (fileVersionHierarchy == -1) {
-            throw new Exception("Please upgrade PolyGlot. The PGD file you are loading was "
-                        + "written with a newer version with additional features: Ver " + versionNumber + ".");
-        } else if (fileVersionHierarchy < core.getVersionHierarchy("0.7.5")) {
-            throw new Exception("Version " + versionNumber + " no longer supported. Load/save with older version of"
-                        + "PolyGlot (0.7.5 through 1.2) to upconvert.");
-        }
+        // Ignore version.
+        // test for version number in pgd file, set to 0 if none found (pre 0.6)
+//        
+//        if (fileVersionHierarchy == -1) {
+//            throw new Exception("Please upgrade PolyGlot. The PGD file you are loading was "
+//                        + "written with a newer version with additional features: Ver " + versionNumber + ".");
+//        } else if (fileVersionHierarchy < core.getVersionHierarchy("0.7.5")) {
+//            throw new Exception("Version " + versionNumber + " no longer supported. Load/save with older version of"
+//                        + "PolyGlot (0.7.5 through 1.2) to upconvert.");
+//        }
 
         return CustHandlerFactory.get075orHigherHandler(core, fileVersionHierarchy);
     }
@@ -554,7 +555,6 @@ public class CustHandlerFactory {
                             // when pulling from legacy gender system, apply to all words initially
                             writeProp.addApplyType(-1);
                         } catch (Exception e) {
-                            IOHandler.writeErrorLog(e);
                             warningLog += "\nGender class load error: " + e.getLocalizedMessage();
                         }
                     }
@@ -615,7 +615,6 @@ public class CustHandlerFactory {
                     try {
                         curWord.setDefinition(WebInterface.unarchiveHTML(curWord.getDefinition(), core));
                     } catch (Exception e) {
-                        IOHandler.writeErrorLog(e);
                         warningLog += "\nWord image load error: " + e.getLocalizedMessage();
                     }
                     
@@ -634,7 +633,6 @@ public class CustHandlerFactory {
                     try {
                         node.setNotes(WebInterface.unarchiveHTML(node.getNotes(), core));
                     } catch (Exception e) {
-                        IOHandler.writeErrorLog(e);
                         warningLog += "\nProblem loading part of speech note image: " + e.getLocalizedMessage();
                     }
                     bwordClassNotes = false;
@@ -684,7 +682,6 @@ public class CustHandlerFactory {
                     try {
                         declensionMgr.setBufferDecNotes(WebInterface.unarchiveHTML(declensionMgr.getBufferDecNotes(), core));
                     } catch (Exception e) {
-                        IOHandler.writeErrorLog(e);
                         warningLog += "\nProblem loading declension notes image: " + e.getLocalizedMessage();
                     }
                     bDecNotes = false;
@@ -727,7 +724,6 @@ public class CustHandlerFactory {
                     try {
                         node.setNotes(WebInterface.unarchiveHTML(node.getNotes(), core));
                     } catch (Exception e) {
-                        IOHandler.writeErrorLog(e);
                         warningLog += "\nProblem loading family note image: " + e.getLocalizedMessage();
                     }
                     bfamNotes = false;
@@ -821,7 +817,6 @@ public class CustHandlerFactory {
                     try {
                         core.getWordPropertiesCollection().insert();
                     } catch (Exception e) {
-                        IOHandler.writeErrorLog(e);
                         warningLog += "\nWord class load error: " + e.getLocalizedMessage();
                     }
                 } else if (qName.equalsIgnoreCase(PGTUtil.ClassIdXID)) {
@@ -836,7 +831,6 @@ public class CustHandlerFactory {
                     try {
                         ((WordClass) core.getWordPropertiesCollection().getBuffer()).insert();
                     } catch (Exception e) {
-                        IOHandler.writeErrorLog(e);
                         warningLog += "\nWord class load error: " + e.getLocalizedMessage();
                     }
                     bclassValueNode = false;
@@ -906,7 +900,6 @@ public class CustHandlerFactory {
                     try {
                         bufferWord.setWordTypeId(core.getTypes().findByName(new String(ch, start, length)).getId());
                     } catch (Exception e) {
-                        IOHandler.writeErrorLog(e);
                         warningLog += "\nWord type load error: " + e.getLocalizedMessage();
                     }
                 } else if (btypeId) {
@@ -958,7 +951,6 @@ public class CustHandlerFactory {
                     try {
                         propertiesManager.setFontCon(new String(ch, start, length));
                     } catch (Exception e) {
-                        IOHandler.writeErrorLog(e);
                         warningLog += "\nFont load error: " + e.getLocalizedMessage();
                     }
                     bfontcon = false;
@@ -987,7 +979,6 @@ public class CustHandlerFactory {
                         bufferWord.setPronunciation(bufferWord.getPronunciation()
                                 + new String(ch, start, length));
                     } catch (Exception e) {
-                        IOHandler.writeErrorLog(e);
                         // Don't bother raising an exception. This is regenerated
                         // each time the word is accessed if the error pops
                         // users will be informed at that more obvious point.
@@ -1111,7 +1102,6 @@ public class CustHandlerFactory {
                         famMgr.getBuffer().addWord(core.getWordCollection().getNodeById(
                                 Integer.parseInt(new String(ch, start, length))));
                     } catch (NumberFormatException e) {
-                        IOHandler.writeErrorLog(e);
                         warningLog += "\nFamily load error: " + e.getLocalizedMessage();
                     }
                     bfamWord = false;
@@ -1186,7 +1176,6 @@ public class CustHandlerFactory {
                         //logographs not currently printed to PDF
 //                        core.getLogoCollection().getBufferNode().setId(Integer.parseInt(new String(ch, start, length)));
                     } catch (NumberFormatException e) {
-                        IOHandler.writeErrorLog(e);
                         warningLog += "\nLogograph load error: " + e.getLocalizedMessage();
                     }
                 } else if (blogoWordRelation) {
@@ -1194,7 +1183,6 @@ public class CustHandlerFactory {
                         //logographs not currently printed to PDF
 //                        core.getLogoCollection().loadLogoRelations(new String(ch, start, length));
                     } catch (Exception e) {
-                        IOHandler.writeErrorLog(e);
                         warningLog += "\nLogograph relation load error: " + e.getLocalizedMessage();
                     }
                 } else if (bgrammarChapName) {
@@ -1242,7 +1230,6 @@ public class CustHandlerFactory {
                     try {
                         core.getPropertiesManager().setKerningSpace(Double.parseDouble(new String(ch, start, length)));
                     } catch (NumberFormatException e) {
-                        IOHandler.writeErrorLog(e);
                         warningLog += "\nProblem loading kerning value: " + e.getLocalizedMessage();
                     }
                 } else if (bprocRecurse) {

@@ -21,7 +21,6 @@
 package PolyGlot.Nodes;
 
 import PolyGlot.DictCore;
-import PolyGlot.IOHandler;
 import PolyGlot.ManagersCollections.ConWordCollection;
 import PolyGlot.PGTUtil;
 import PolyGlot.WebInterface;
@@ -274,8 +273,7 @@ public class ConWord extends DictNode {
             try {
                 ret = core.getTypes().getNodeById(typeId).getValue();
             } catch (Exception e) {
-                IOHandler.writeErrorLog(e);
-                // If a type no longer exists, set the type ID to 0, then continue
+                // If a type no longer exists, set the type ID to 0 then continue
                 typeId = 0;
             }
         }

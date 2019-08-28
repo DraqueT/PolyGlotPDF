@@ -22,8 +22,6 @@ package PolyGlot;
 import static PolyGlot.IOHandler.isFileZipArchive;
 import java.awt.Font;
 import java.awt.FontFormatException;
-import java.awt.GraphicsEnvironment;
-import java.awt.Label;
 import java.awt.font.TextAttribute;
 import java.io.File;
 import java.io.FileInputStream;
@@ -137,7 +135,6 @@ public class PFontHandler {
                 ret = wrapFont(Font.createFont(Font.TRUETYPE_FONT, fontFile));
             }
         } catch (Exception e) {
-            IOHandler.writeErrorLog(e);
             // do nothing here. Failure means returning null
         }
 
@@ -268,7 +265,6 @@ public class PFontHandler {
                 // null detected and message bubbled to user elsewhere
                 ret = null;
             } catch (IOException e) {
-                IOHandler.writeErrorLog(e, path);
                 // null detected and message bubbled to user elsewhere
                 ret = null;
             }
@@ -300,7 +296,6 @@ public class PFontHandler {
                 try {
                     fontFile = PFontHandler.getFontFile(ouputFont);
                 } catch (Exception e) {
-                    IOHandler.writeErrorLog(e);
                     writeLog += "\nerror: " + e.getLocalizedMessage();
                 }
 
@@ -338,7 +333,6 @@ public class PFontHandler {
                 out.closeEntry();
             }
         } catch (IOException e) {
-            IOHandler.writeErrorLog(e);
             writeLog += "\nUnable to write font to archive: " + e.getMessage();
         }
         return writeLog;

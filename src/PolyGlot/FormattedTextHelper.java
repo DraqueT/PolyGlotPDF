@@ -23,6 +23,7 @@ import PolyGlot.CustomControls.PGrammarPane;
 import PolyGlot.Nodes.ImageNode;
 import java.awt.Color;
 import java.awt.Font;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -61,8 +62,9 @@ public class FormattedTextHelper {
      * @param pane Text pane to restore formatted text to.
      * @param core Dictionary Core (needed for references)
      * @throws javax.swing.text.BadLocationException if unable to load
+     * @throws java.io.IOException
      */
-    public static void restoreFromString(String savedVal, JTextPane pane, DictCore core) throws BadLocationException {
+    public static void restoreFromString(String savedVal, JTextPane pane, DictCore core) throws BadLocationException, IOException {
         String remaining = savedVal;
         pane.setText("");
         Color fontColor = Color.black;

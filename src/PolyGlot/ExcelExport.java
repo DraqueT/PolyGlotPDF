@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2018, Draque Thompson, draquemail@gmail.com
+ * Copyright (c) 2014-2019, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
  * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
@@ -19,7 +19,6 @@
  */
 package PolyGlot;
 
-import PolyGlot.CustomControls.InfoBox;
 import PolyGlot.ManagersCollections.DeclensionManager;
 import PolyGlot.Nodes.ConWord;
 import PolyGlot.Nodes.PronunciationNode;
@@ -80,9 +79,9 @@ public class ExcelExport {
      * @param fileName Filename to export to
      * @param core dictionary core
      * @param separateDeclensions whether to separate parts of speech into separate pages for declension values
-     * @throws Exception on write error
+     * @throws IOException on write error
      */
-    public static void exportExcelDict(String fileName, DictCore core, boolean separateDeclensions) throws Exception {
+    public static void exportExcelDict(String fileName, DictCore core, boolean separateDeclensions) throws IOException {
         ExcelExport e = new ExcelExport(core);
 
         e.export(fileName, separateDeclensions);
@@ -115,7 +114,6 @@ public class ExcelExport {
         try {
             ret.add(conWord.getPronunciation());
         } catch (Exception e) {
-            IOHandler.writeErrorLog(e);
             ret.add("<ERROR>");
         }
 
@@ -129,7 +127,6 @@ public class ExcelExport {
                 WordClassValue value = prop.getValueById(curEntry.getValue());
                 classes += value.getValue();
             } catch (Exception e) {
-                IOHandler.writeErrorLog(e);
                 classes = "ERROR: UNABLE TO PULL CLASS";
             }
         }
@@ -148,7 +145,6 @@ public class ExcelExport {
                     declensionCell += decMan.declineWord(conWord, declension.combinedId, conWord.getValue()) + ":";
                 }
             } catch (Exception e) {
-                IOHandler.writeErrorLog(e);
                 declensionCell += "DECLENSION ERROR";
             }
         }
@@ -175,7 +171,6 @@ public class ExcelExport {
         try {
             ret.add(conWord.getPronunciation());
         } catch (Exception e) {
-            IOHandler.writeErrorLog(e);
             ret.add("<ERROR>");
         }
 
@@ -189,10 +184,23 @@ public class ExcelExport {
                 WordClassValue value = prop.getValueById(curEntry.getValue());
                 classes += value.getValue();
             } catch (Exception e) {
-                IOHandler.writeErrorLog(e);
                 classes = "ERROR: UNABLE TO PULL CLASS";
             }
         }
+        
+        for (Entry<Integer, String> curEntry : conWord.getClassTextValues()) {
+            if (classes.length() != 0) {
+                classes += ", ";
+            }
+            
+            try {
+                WordClass prop = (WordClass) core.getWordPropertiesCollection().getNodeById(curEntry.getKey());
+                classes += prop.getValue() + ":" + curEntry.getValue();
+            } catch (Exception e) {
+                classes = "ERROR: UNABLE TO PULL CLASS";
+            }
+        }
+        
         ret.add(classes);
 
         decList.forEach((declension) -> {
@@ -206,7 +214,6 @@ public class ExcelExport {
                     ret.add(decMan.declineWord(conWord, declension.combinedId, conWord.getValue()));
                 }
             } catch (Exception e) {
-                IOHandler.writeErrorLog(e);
                 ret.add("DECLENSION ERROR");
             }
         });
@@ -223,7 +230,7 @@ public class ExcelExport {
      * @param separateDeclensions whether to separate parts of speech into separate pages for declension values
      * @throws Exception on write error
      */
-    private void export(String fileName, boolean separateDeclensions) throws Exception {
+    private void export(String fileName, boolean separateDeclensions) throws IOException {
         this.recordWords(separateDeclensions);
         
         // record types on sheet
@@ -303,7 +310,7 @@ public class ExcelExport {
                 workbook.write(out);
             }
         } catch (IOException e) {
-            throw new Exception("Unable to write file: " + fileName);
+            throw new IOException("Unable to write file: " + fileName);
         }
     }
     
@@ -352,10 +359,7 @@ public class ExcelExport {
                         rowCount++;
                     }
                 } catch (Exception e) {
-                    IOHandler.writeErrorLog(e);
-                    InfoBox.error("Export Error", 
-                            "Unable to export " + type.getValue() + " lexical values", 
-                            core.getRootWindow());
+                    System.out.println( "Unable to export " + type.getValue() + " lexical values");
                 }
             });
         } else {

@@ -22,23 +22,16 @@ package PolyGlot.CustomControls;
 import PolyGlot.ClipboardHandler;
 import PolyGlot.DictCore;
 import PolyGlot.ExternalCode.GlyphVectorEditorKit;
-import PolyGlot.IOHandler;
 import PolyGlot.Nodes.ImageNode;
 import PolyGlot.PGTUtil;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Toolkit;
-import java.awt.Window;
-import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import javax.swing.ImageIcon;
 import javax.swing.InputMap;
-import javax.swing.JMenuItem;
-import javax.swing.JPopupMenu;
 import javax.swing.JTextPane;
 import javax.swing.KeyStroke;
 import javax.swing.UIManager;
@@ -52,7 +45,8 @@ import javax.swing.text.MutableAttributeSet;
 import javax.swing.text.StyleConstants;
 
 /**
- * Similar to the PTextPane, but compatible with the HTML stylings performed in the grammar window
+ * Similar to the PTextPane, but compatible with the HTML stylings performed in
+ * the grammar window
  *
  * @author draque.thompson
  */
@@ -62,11 +56,10 @@ public class PGrammarPane extends JTextPane {
 
     public PGrammarPane(DictCore _core) {
         core = _core;
-        setupRightClickMenu();
         setEditorKit(new GlyphVectorEditorKit()); // TODO: This is causing access violations that will make trouble in Java 13+. Deal with it at some point.
         setupCopyPaste();
     }
-    
+
     /**
      * Due to setting editor kit, need to create input map manually
      */
@@ -82,112 +75,13 @@ public class PGrammarPane extends JTextPane {
         }
     }
 
-    private void setupRightClickMenu() {
-        final JPopupMenu ruleMenu = new JPopupMenu();
-        final JMenuItem insertImage = new JMenuItem("Insert Image");
-        final JMenuItem cut = new JMenuItem("Cut");
-        final JMenuItem copy = new JMenuItem("Copy");
-        final JMenuItem paste = new JMenuItem("Paste");
-        final PGrammarPane parentPane = this;
-
-        insertImage.setToolTipText("Insert Image into Text");
-        insertImage.addActionListener((ActionEvent ae) -> {
-            try {
-                ImageNode image = core.getImageCollection()
-                        .openNewImage((Window) parentPane.getTopLevelAncestor());
-                if (image != null) {
-                    // null node means user cancelled process
-                    addImage(image);
-                }
-            } catch (Exception e) {
-                IOHandler.writeErrorLog(e);
-                InfoBox.error("Image Import Error", "Unable to import image: "
-                        + e.getLocalizedMessage(), core.getRootWindow());
-            }
-        });
-        cut.addActionListener((ActionEvent ae) -> {
-            cut();
-        });
-        copy.addActionListener((ActionEvent ae) -> {
-            copy();
-        });
-        paste.addActionListener((ActionEvent ae) -> {
-            paste();
-        });
-
-        ruleMenu.add(insertImage);
-        ruleMenu.add(cut);
-        ruleMenu.add(copy);
-        ruleMenu.add(paste);
-
-        addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                if (e.isPopupTrigger() && parentPane.isEnabled()) {
-                    insertImage.setEnabled(true);
-                    cut.setEnabled(true);
-                    copy.setEnabled(true);
-                    paste.setEnabled(true);
-                    ruleMenu.show(e.getComponent(), e.getX(), e.getY());
-                }
-            }
-
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                if (e.isPopupTrigger() && parentPane.isEnabled()) {
-                    insertImage.setEnabled(true);
-                    cut.setEnabled(true);
-                    copy.setEnabled(true);
-                    paste.setEnabled(true);
-                    ruleMenu.show(e.getComponent(), e.getX(), e.getY());
-                }
-            }
-        });
-    }
-
-    @Override
-    protected void processKeyEvent(KeyEvent e) {
-        if (e != null) {
-            if (e.getID() == KeyEvent.KEY_PRESSED && e.getKeyChar() == KeyEvent.VK_TAB) {
-                tabKeyHit();
-                e.consume();
-            }
-            if (!e.isConsumed()) {
-                super.processKeyEvent(e);
-            }
-        }
-    }
-    
-    /**
-     * This is the action which replaces the tab key being hit due to rendering concerns with an external library
-     */
-    private void tabKeyHit() {
-        try {
-            ClipboardHandler cb = new ClipboardHandler();
-            cb.cacheClipboard();
-            cb.setClipboardContents("    "); // four spaces replace the tab
-            this.paste();
-            cb.restoreClipboard();
-        } catch (Exception e) {
-            IOHandler.writeErrorLog(e);
-            InfoBox.error("Rendering Error", "Tab rendering error: " 
-                    + e.getLocalizedMessage(), core.getRootWindow());
-        }
-    }
-
-    public void addImage(ImageNode image) {
-        try {
-            MutableAttributeSet inputAttributes = getInputAttributes();
-            inputAttributes.removeAttributes(inputAttributes);
-            StyleConstants.setIcon(inputAttributes, new ImageIcon(image.getImagePath()));
-            inputAttributes.addAttribute(PGTUtil.ImageIdAttribute, image.getId());
-            replaceSelection(" ", false);
-            inputAttributes.removeAttributes(inputAttributes);
-        } catch (IOException e) {
-            IOHandler.writeErrorLog(e);
-            InfoBox.error("Image Insertion Error", "Unable to insert image: "
-                    + e.getLocalizedMessage(), core.getRootWindow());
-        }
+    public void addImage(ImageNode image) throws IOException, BadLocationException {
+        MutableAttributeSet inputAttributes = getInputAttributes();
+        inputAttributes.removeAttributes(inputAttributes);
+        StyleConstants.setIcon(inputAttributes, new ImageIcon(image.getImagePath()));
+        inputAttributes.addAttribute(PGTUtil.ImageIdAttribute, image.getId());
+        replaceSelection(" ", false);
+        inputAttributes.removeAttributes(inputAttributes);
     }
 
     /**
@@ -196,15 +90,15 @@ public class PGrammarPane extends JTextPane {
     @Override
     public void paste() {
         // might handle more types in the future
-        if (ClipboardHandler.isClipboardImage()) {
-            try {
+        try {
+            if (ClipboardHandler.isClipboardImage()) {
                 Object imageObject = ClipboardHandler.getClipboardImage();
                 BufferedImage image;
                 if (imageObject instanceof BufferedImage) {
-                    image = (BufferedImage)imageObject;
+                    image = (BufferedImage) imageObject;
                 } else if (imageObject instanceof Image) {
-                    Image imageImage = (Image)imageObject;
-                    image = new BufferedImage(imageImage.getWidth(null), 
+                    Image imageImage = (Image) imageObject;
+                    image = new BufferedImage(imageImage.getWidth(null),
                             imageImage.getHeight(null), BufferedImage.TYPE_INT_ARGB);
 
                     // Draw the image on to the buffered image
@@ -216,54 +110,43 @@ public class PGrammarPane extends JTextPane {
                 }
                 ImageNode imageNode = core.getImageCollection().getFromBufferedImage(image);
                 addImage(imageNode);
-            } catch (Exception e) {
-                IOHandler.writeErrorLog(e);
-                InfoBox.error("Paste Error", "Unable to paste: " + e.getLocalizedMessage(), core.getRootWindow());
-            }
-        } else if (ClipboardHandler.isClipboardString()) {
-            try {
+            } else if (ClipboardHandler.isClipboardString()) {
                 // sanitize contents to plain text
                 ClipboardHandler board = new ClipboardHandler();
                 board.setClipboardContents(board.getClipboardText());
                 super.paste();
-            } catch (Exception e) {
-                IOHandler.writeErrorLog(e);
-                InfoBox.error("Paste Error", "Unable to paste text: " + e.getLocalizedMessage(), core.getRootWindow());
+            } else {
+                super.paste();
             }
-        } else {
-            super.paste();
+        } catch (Exception e) {
+            System.out.println("WARNING: PGrammarPane Paste Failed");
         }
     }
 
-    private void replaceSelection(String content, boolean checkEditable) {
+    private void replaceSelection(String content, boolean checkEditable) throws BadLocationException {
         if (checkEditable && !isEditable()) {
             UIManager.getLookAndFeel().provideErrorFeedback(PGrammarPane.this);
             return;
         }
         Document doc = getStyledDocument();
         if (doc != null) {
-            try {
-                Caret caret = getCaret();
-                boolean composedTextSaved = saveComposedText(caret.getDot());
-                int p0 = Math.min(caret.getDot(), caret.getMark());
-                int p1 = Math.max(caret.getDot(), caret.getMark());
-                AttributeSet attr = getInputAttributes().copyAttributes();
-                if (doc instanceof AbstractDocument) {
-                    ((AbstractDocument) doc).replace(p0, p1 - p0, content, attr);
-                } else {
-                    if (p0 != p1) {
-                        doc.remove(p0, p1 - p0);
-                    }
-                    if (content != null && content.length() > 0) {
-                        doc.insertString(p0, content, attr);
-                    }
+            Caret caret = getCaret();
+            boolean composedTextSaved = saveComposedText(caret.getDot());
+            int p0 = Math.min(caret.getDot(), caret.getMark());
+            int p1 = Math.max(caret.getDot(), caret.getMark());
+            AttributeSet attr = getInputAttributes().copyAttributes();
+            if (doc instanceof AbstractDocument) {
+                ((AbstractDocument) doc).replace(p0, p1 - p0, content, attr);
+            } else {
+                if (p0 != p1) {
+                    doc.remove(p0, p1 - p0);
                 }
-                if (composedTextSaved) {
-                    restoreComposedText();
+                if (content != null && content.length() > 0) {
+                    doc.insertString(p0, content, attr);
                 }
-            } catch (BadLocationException e) {
-                IOHandler.writeErrorLog(e);
-                UIManager.getLookAndFeel().provideErrorFeedback(PGrammarPane.this);
+            }
+            if (composedTextSaved) {
+                restoreComposedText();
             }
         }
     }

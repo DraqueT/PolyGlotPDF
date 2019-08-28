@@ -19,9 +19,7 @@
  */
 package PolyGlot;
 
-import PolyGlot.CustomControls.InfoBox;
 import PolyGlot.CustomControls.PAlphaMap;
-import PolyGlot.CustomControls.PFrame;
 import PolyGlot.Nodes.DeclensionNode;
 import PolyGlot.ManagersCollections.PropertiesManager;
 import PolyGlot.ManagersCollections.GrammarManager;
@@ -38,7 +36,6 @@ import PolyGlot.ManagersCollections.RomanizationManager;
 import PolyGlot.ManagersCollections.ToDoManager;
 import PolyGlot.ManagersCollections.VisualStyleManager;
 import PolyGlot.ManagersCollections.WordClassCollection;
-import PolyGlot.Screens.ScrMainMenu;
 import java.awt.Color;
 import java.awt.FontFormatException;
 import java.io.IOException;
@@ -68,7 +65,6 @@ public class DictCore {
     private VisualStyleManager visualStyleManager;
     private ReversionManager reversionManager;
     private ToDoManager toDoManager;
-    private ScrMainMenu rootWindow;
     private Object clipBoard;
     private boolean curLoading = false;
     private final Map<String, Integer> versionHierarchy = new HashMap<>();
@@ -77,58 +73,38 @@ public class DictCore {
     /**
      * Language core initialization
      *
+     * @throws java.io.IOException
      */
-    public DictCore() {
+    public DictCore() throws IOException {
         initializeDictCore();
     }
     
-    /**
-     * Initializes a new core based on the old one. Options, contents of prior clipboard, and the prior root
-     * window are retained.
-     * @param oldCore 
-     */
-    public DictCore(DictCore oldCore) {
-        initializeDictCore();
-        
-        optionsManager = oldCore.optionsManager;
-        optionsManager.setCore(this);
-        clipBoard = oldCore.clipBoard;
-        rootWindow = oldCore.rootWindow;
-    }
-    
-    private void initializeDictCore() {
-        try {
-            wordCollection = new ConWordCollection(this);
-            typeCollection = new TypeCollection(this);
-            declensionMgr = new DeclensionManager(this);
-            propertiesManager = new PropertiesManager(this);
-            pronuncMgr = new PronunciationMgr(this);
-            romMgr = new RomanizationManager(this);
-            famManager = new FamilyManager(this);
-            //logoCollection = new LogoCollection(this); //logographs not currently printed to PDF
-            grammarManager = new GrammarManager();
-            optionsManager = new OptionsManager(this);
-            wordPropCollection = new WordClassCollection(this);
-            imageCollection = new ImageCollection();
-            etymologyManager = new EtymologyManager(this);
-            visualStyleManager = new VisualStyleManager(this);
-            reversionManager = new ReversionManager(this);
-            toDoManager = new ToDoManager();
+    private void initializeDictCore() throws IOException {
+        wordCollection = new ConWordCollection(this);
+        typeCollection = new TypeCollection(this);
+        declensionMgr = new DeclensionManager(this);
+        propertiesManager = new PropertiesManager(this);
+        pronuncMgr = new PronunciationMgr(this);
+        romMgr = new RomanizationManager(this);
+        famManager = new FamilyManager(this);
+        //logoCollection = new LogoCollection(this); //logographs not currently printed to PDF
+        grammarManager = new GrammarManager();
+        optionsManager = new OptionsManager(this);
+        wordPropCollection = new WordClassCollection(this);
+        imageCollection = new ImageCollection();
+        etymologyManager = new EtymologyManager(this);
+        visualStyleManager = new VisualStyleManager(this);
+        reversionManager = new ReversionManager(this);
+        toDoManager = new ToDoManager();
 
-            PAlphaMap<String, Integer> alphaOrder = propertiesManager.getAlphaOrder();
+        PAlphaMap<String, Integer> alphaOrder = propertiesManager.getAlphaOrder();
 
-            wordCollection.setAlphaOrder(alphaOrder);
-            typeCollection.setAlphaOrder(alphaOrder);
-            //logoCollection.setAlphaOrder(alphaOrder); //logographs not currently printed to PDF
-            wordPropCollection.setAlphaOrder(alphaOrder);
-            rootWindow = null;
-            
-            populateVersionHierarchy();
-            validateVersion();
-        } catch (Exception e) {
-            IOHandler.writeErrorLog(e);
-            InfoBox.error("CORE ERROR", "Error creating language core: " + e.getLocalizedMessage(), null);
-        }
+        wordCollection.setAlphaOrder(alphaOrder);
+        typeCollection.setAlphaOrder(alphaOrder);
+        //logoCollection.setAlphaOrder(alphaOrder); //logographs not currently printed to PDF
+        wordPropCollection.setAlphaOrder(alphaOrder);
+
+        populateVersionHierarchy();
     }
 
     /**
@@ -152,10 +128,6 @@ public class DictCore {
         return propertiesManager.getLocalLangName().length() == 0
                 ? "Local Lang"
                 : propertiesManager.getLocalLangName();
-    }
-
-    public void setRootWindow(ScrMainMenu _rootWindow) {
-        rootWindow = _rootWindow;
     }
 
     public OptionsManager getOptionsManager() {
@@ -183,17 +155,12 @@ public class DictCore {
      * Retrieves working directory of PolyGlot
      *
      * @return current working directory
+     * @throws java.net.URISyntaxException
      */
-    public String getWorkingDirectory() {
+    public String getWorkingDirectory() throws URISyntaxException {
         String ret = propertiesManager.getOverrideProgramPath();
 
-        try {
-            ret = ret.isEmpty() ? DictCore.class.getProtectionDomain().getCodeSource().getLocation().toURI().g‌​etPath() : ret;
-        } catch (URISyntaxException e) {
-            IOHandler.writeErrorLog(e);
-            InfoBox.error("PATH ERROR", "Unable to resolve root path of PolyGlot:\n"
-                    + e.getLocalizedMessage(), rootWindow);
-        }
+        ret = ret.isEmpty() ? DictCore.class.getProtectionDomain().getCodeSource().getLocation().toURI().g‌​etPath() : ret;
 
         // in some circumstances (but not others) the name of the jar will be appended... remove
         if (ret.endsWith(PGTUtil.jarArchiveName)) {
@@ -223,68 +190,6 @@ public class DictCore {
      */
     public Object getClipBoard() {
         return clipBoard;
-    }
-
-    /**
-     * Pushes save signal to main interface menu
-     */
-    public void coreSave() {
-        ((ScrMainMenu) rootWindow).saveFile();
-    }
-
-    /**
-     * Pushes save signal to main interface menu
-     */
-    public void coreOpen() {
-        ((ScrMainMenu) rootWindow).open();
-    }
-
-    /**
-     * Pushes save signal to main interface menu
-     *
-     * @param performTest whether to prompt user to save
-     */
-    public void coreNew(boolean performTest) {
-        ((ScrMainMenu) rootWindow).newFile(performTest);
-    }
-
-    /**
-     * Pushes signal to all forms to update their values from the core. Cascades
-     * through windows and their children.
-     */
-    public void pushUpdate() {
-        pushUpdateWithCore(this);
-    }
-    
-    /**
-     * Pushes signal to all forms to update their values from the core. Cascades
-     * through windows and their children.
-     * @param _core new core to push
-     */
-    public void pushUpdateWithCore(DictCore _core) {
-        StackTraceElement stack[] = Thread.currentThread().getStackTrace();
-
-        // prevent recursion (exclude check of top method, obviously)
-        for (int i = (stack.length - 1); i > 1; i--) {
-            StackTraceElement element = stack[i];
-            if (element.getMethodName().equals("pushUpdateWithCore")) {
-                return;
-            }
-        }
-
-        // null root window indicates that this is a virtual dict core used for library analysis
-        if (rootWindow != null) {
-            rootWindow.updateAllValues(_core);
-        }
-    }
-
-    /**
-     * Returns root window of PolyGlot
-     *
-     * @return
-     */
-    public PFrame getRootWindow() {
-        return rootWindow;
     }
 
     /**
@@ -355,8 +260,9 @@ public class DictCore {
      * @param _fileName filename to read from
      * @throws java.io.IOException for unrecoverable errors
      * @throws IllegalStateException for recoverable errors
+     * @throws java.awt.FontFormatException
      */
-    public void readFile(String _fileName) throws IOException, IllegalStateException {
+    public void readFile(String _fileName) throws IOException, IllegalStateException, FontFormatException {
         readFile(_fileName, null);
     }
     
@@ -367,8 +273,9 @@ public class DictCore {
      * @param overrideXML override to where the XML should be loaded from
      * @throws java.io.IOException for unrecoverable errors
      * @throws IllegalStateException for recoverable errors
+     * @throws java.awt.FontFormatException
      */
-    public void readFile(String _fileName, byte[] overrideXML) throws IOException, IllegalStateException {
+    public void readFile(String _fileName, byte[] overrideXML) throws IOException, IllegalStateException, FontFormatException {
         curLoading = true;
         String errorLog = "";
         String warningLog = "";
@@ -390,12 +297,7 @@ public class DictCore {
             throw new IOException("Image loading error: " + e.getLocalizedMessage());
         }
 
-        try {
-            PFontHandler.setFontFrom(_fileName, this);
-        } catch (IOException | FontFormatException e) {
-            IOHandler.writeErrorLog(e);
-            warningLog += e.getLocalizedMessage() + "\n";
-        }
+        PFontHandler.setFontFrom(_fileName, this);
         
         try {
             CustHandler handler;
@@ -429,12 +331,7 @@ public class DictCore {
 //            warningLog += e.getLocalizedMessage() + "\n";
 //        }
         
-        try {
-            IOHandler.loadReversionStates(reversionManager, _fileName);
-        } catch (IOException e) {
-            IOHandler.writeErrorLog(e);
-            warningLog += e.getLocalizedMessage() + "\n";
-        }
+        IOHandler.loadReversionStates(reversionManager, _fileName);
 
         curLoading = false;
 
@@ -456,9 +353,6 @@ public class DictCore {
     public void revertToState(byte[] revision, String fileName) throws IOException, Exception {
         DictCore revDict = new DictCore();
         revDict.readFile(fileName, revision);
-        revDict.setRootWindow(rootWindow);
-        
-        pushUpdateWithCore(revDict);
     }
     
     /**
@@ -476,7 +370,6 @@ public class DictCore {
             errorLog = handler.getErrorLog();
             // errorLog += handler.getWarningLog(); // warnings may be disregarded here
         } catch (IOException | ParserConfigurationException | SAXException e) {
-            IOHandler.writeErrorLog(e);
             errorLog = e.getLocalizedMessage();
         }
         
@@ -556,10 +449,6 @@ public class DictCore {
         if (!versionHierarchy.containsKey(this.getVersion())) {
             throw new Exception("ERROR: CURRENT VERSION NOT ACCOUNTED FOR IN VERSION HISTORY.");
         }
-    }
-    
-    public String getCurFileName() {
-        return rootWindow.getCurFileName();
     }
     
     private void populateVersionHierarchy() {

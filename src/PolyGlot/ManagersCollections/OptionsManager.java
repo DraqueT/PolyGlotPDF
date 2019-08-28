@@ -202,15 +202,6 @@ public class OptionsManager {
     }
 
     /**
-     * Saves ini file to disk
-     *
-     * @throws IOException on failure to write
-     */
-    public void saveIni() throws IOException {
-        IOHandler.saveOptionsIni(core);
-    }
-
-    /**
      * @return the animateWindows
      */
     public boolean isAnimateWindows() {

@@ -21,7 +21,6 @@ package PolyGlot;
 
 import PolyGlot.CustomControls.GrammarChapNode;
 import PolyGlot.CustomControls.GrammarSectionNode;
-import PolyGlot.CustomControls.InfoBox;
 import PolyGlot.CustomControls.PPanelDrawEtymology;
 import PolyGlot.Nodes.ConWord;
 import PolyGlot.Nodes.DeclensionNode;
@@ -158,7 +157,7 @@ public class PExportToPDF {
      *
      * @throws java.io.FileNotFoundException
      */
-    public void print() throws FileNotFoundException, IOException, Exception {
+    public void print() throws FileNotFoundException, IOException {
         PdfDocument pdf = new PdfDocument(new PdfWriter(targetFile));
         document = new Document(pdf);
         DocumentRenderer defRender = new DocumentRenderer(document, false);
@@ -295,7 +294,7 @@ public class PExportToPDF {
         } catch (IOException e) {
             // always close document before returning
             document.close();
-            throw new Exception(e.getMessage());
+            throw new IOException(e.getMessage());
         }
 
         // Drop page number information into place
@@ -322,8 +321,7 @@ public class PExportToPDF {
 
         // inform user of errors
         if (log.length() != 0) {
-            InfoBox.warning("PDF Generation Errors", "Problems with PDF generation:\n"
-                    + log, core.getRootWindow());
+            System.out.println("WARNING: Problems with PDF generation:\n" + log);
         }
     }
 
@@ -437,7 +435,6 @@ public class PExportToPDF {
                                 .getNodeById(curEntry.getKey());
                         value = prop.getValueById(curEntry.getValue());
                     } catch (Exception e) {
-                        IOHandler.writeErrorLog(e);
                         log += "\nProblem printing classes for word (" + curWord.getValue()
                                 + "): " + e.getLocalizedMessage();
                         continue;
@@ -485,7 +482,6 @@ public class PExportToPDF {
                 try {
                     romStr = core.getRomManager().getPronunciation(curWord.getValue());
                 } catch (Exception e) {
-                    IOHandler.writeErrorLog(e);
                     romStr = "<ERROR>";
                 }
 
@@ -657,7 +653,6 @@ public class PExportToPDF {
                                 .getNodeById(curEntry.getKey());
                         value = prop.getValueById(curEntry.getValue());
                     } catch (Exception e) {
-                        IOHandler.writeErrorLog(e);
                         log += "\nProblem printing classes for word: " + curWord.getValue();
                         continue;
                     }
@@ -702,7 +697,6 @@ public class PExportToPDF {
                 try {
                     romStr = core.getRomManager().getPronunciation(curWord.getValue());
                 } catch (Exception e) {
-                    IOHandler.writeErrorLog(e);
                     romStr = "<ERROR>";
                 }
 
@@ -842,7 +836,6 @@ public class PExportToPDF {
                                 curPair.combinedId,
                                 curWord.getValue());
                     } catch (Exception e) {
-                        IOHandler.writeErrorLog(e);
                         log += "Problem generating " + curPair.label
                                 + " due to bad regex. Please check regex for word form.";
                     }
@@ -898,7 +891,6 @@ public class PExportToPDF {
                             Image pdfImage = new Image(ImageDataFactory.create(bytes));
                             newSec.add(pdfImage);
                         } catch (IOException | NumberFormatException e) {
-                            IOHandler.writeErrorLog(e);
                             log += "\nUnable to include images from grammar section: " + curSec.getName();
                         }
                     } else {

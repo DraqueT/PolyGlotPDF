@@ -214,7 +214,7 @@ public final class PPanelDrawEtymology extends JPanel {
     /**
      * Given a graphical interface, prints the etymology tree visually
      */
-    private void paintEt(Graphics g) {
+    private void paintEt(Graphics g) throws Exception {
         wordMap = new RectangularCoordinateMap<>();
         myWordPosition.children.clear();
         myWordPosition.parents.clear();
@@ -237,7 +237,7 @@ public final class PPanelDrawEtymology extends JPanel {
      * @param firstEntry whether this is the first entry (skip printing)
      * @return the line height of this entry as printed
      */
-    private int paintEtParents(EtymologyPrintingNode myNode, Graphics g, boolean firstEntry) {
+    private int paintEtParents(EtymologyPrintingNode myNode, Graphics g, boolean firstEntry) throws Exception {
         int xOffset = 0;
         int topParentHeight = 0;
         int bottomParentHeight = 0;
@@ -294,14 +294,8 @@ public final class PPanelDrawEtymology extends JPanel {
             halfTextHeight = conFontMetrics.getHeight() / 3;
             myLineHeight = curYDepth - halfTextHeight;
             
-            try {
-                wordMap.addRectangle(xOffset, xOffset + conFontMetrics.stringWidth(myNode.word.getValue()), 
-                        curYDepth - conFontMetrics.getHeight(), curYDepth, myNode.word);
-            } catch (Exception e) {
-                IOHandler.writeErrorLog(e);
-                InfoBox.error("Tooltip Generation error", "Error generating tooltip values: " 
-                        + e.getLocalizedMessage(), core.getRootWindow());
-            }
+            wordMap.addRectangle(xOffset, xOffset + conFontMetrics.stringWidth(myNode.word.getValue()), 
+                    curYDepth - conFontMetrics.getHeight(), curYDepth, myNode.word);
             curYDepth += conFontMetrics.getHeight();
         }
         
@@ -329,7 +323,7 @@ public final class PPanelDrawEtymology extends JPanel {
      * recursively prints child nodes
      */
     private void paintEtChildren(EtymologyPrintingNode myNode, Graphics g,
-            int xParentEnd, int yParentEnd, boolean firstEntry) {
+            int xParentEnd, int yParentEnd, boolean firstEntry) throws Exception {
         int xOffset = 0;
         int startYDepth = curYDepth - (conFontMetrics.getHeight() / 3);
         String myText = myNode.word.getValue();
@@ -343,14 +337,8 @@ public final class PPanelDrawEtymology extends JPanel {
             g.setFont(core.getPropertiesManager().getFontCon());
             g.drawString(myNode.word.getValue(), xOffset, curYDepth);
             
-            try {
-                wordMap.addRectangle(xOffset, xOffset + conFontMetrics.stringWidth(myText), 
-                        curYDepth - conFontMetrics.getHeight(), curYDepth, myNode.word);
-            } catch (Exception e) {
-                IOHandler.writeErrorLog(e);
-                InfoBox.error("Tooltip Generation error", "Error generating tooltip values: " 
-                        + e.getLocalizedMessage(), core.getRootWindow());
-            }
+            wordMap.addRectangle(xOffset, xOffset + conFontMetrics.stringWidth(myText), 
+                    curYDepth - conFontMetrics.getHeight(), curYDepth, myNode.word);
             
             curYDepth += conFontMetrics.getHeight();
 
@@ -380,7 +368,9 @@ public final class PPanelDrawEtymology extends JPanel {
         Graphics2D antiAlias = (Graphics2D) g;
         antiAlias.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        paintEt(g);
+        try{paintEt(g);}catch(Exception e){
+            System.out.println("ERROR: Etymology Rendering Error");
+        }
     }
 
     /**

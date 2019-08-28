@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, DThompson
+ * Copyright (c) 2019, draque
  * All rights reserved.
  *
  * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
@@ -19,35 +19,27 @@
  */
 package PolyGlot;
 
-import java.util.HashSet;
-import java.util.Set;
-import nl.flotsam.xeger.Xeger;
-
+import java.io.OutputStream;
+import java.io.PrintStream;
 
 /**
  *
- * @author DThompson
+ * @author draque
  */
-public class RegexTools {
-    public void test() {
-
-        String regex = "[ab]{4,6}c";
-        //String regex = "(regular|tonic)(ly)?";
-        Xeger generator = new Xeger(regex);
-        String result = generator.generate();
-        //assertTrue(result.matches(regex));
-
-        // bruteforce
-        Set<String> generated = new HashSet<>();
-        for (int i = 0; i < 100000; i++) {
-            generated.add(generator.generate());
+public class OutputInterceptor extends PrintStream {
+    private String intercepted = "";
+        
+        public OutputInterceptor(OutputStream out) {
+            super(out, true);
         }
-        for (String g : generated) {
-            System.out.println(g);
+
+        @Override
+        public void print(String s) {//do what ever you like
+            super.print(s);
+            intercepted += s;
         }
-    }
-    
-//    public static void main(String[] args) {
-//        new RegexTools().test();
-//    }
+        
+        public String getIntercepted() {
+            return intercepted;
+        }
 }

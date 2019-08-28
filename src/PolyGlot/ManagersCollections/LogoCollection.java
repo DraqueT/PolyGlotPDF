@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2018, Draque Thompson, draquemail@gmail.com
+ * Copyright (c) 2014-2019, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
  * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
@@ -19,13 +19,11 @@
  */
 package PolyGlot.ManagersCollections;
 
-import PolyGlot.CustomControls.InfoBox;
 import PolyGlot.Nodes.ConWord;
 import PolyGlot.DictCore;
 import PolyGlot.IOHandler;
 import PolyGlot.Nodes.LogoNode;
 import PolyGlot.PGTUtil;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,7 +31,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import javax.imageio.ImageIO;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -333,7 +330,6 @@ public class LogoCollection extends DictionaryCollection<LogoNode> {
                 
                 addWordLogoRelation(word, relNode);
             } catch (NumberFormatException e) {
-                IOHandler.writeErrorLog(e);
                 loadLog += "\nLogograph load error: " + e.getLocalizedMessage();
             }
         }
@@ -355,7 +351,6 @@ public class LogoCollection extends DictionaryCollection<LogoNode> {
                 LogoNode curNode = it.next();
                 curNode.loadRadicalRelations(nodeMap);
             } catch (Exception e) {
-                IOHandler.writeErrorLog(e);
                 loadLog = e.getLocalizedMessage() + "\n";
             }
         }

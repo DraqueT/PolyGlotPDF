@@ -19,129 +19,144 @@
  */
 package PolyGlot;
 
-import PolyGlot.CustomControls.InfoBox;
-import PolyGlot.CustomControls.PFrame;
-import PolyGlot.Screens.ScrMainMenu;
+import java.awt.FontFormatException;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 
 /**
- * Starts up PolyGlot and does testing for OS/platform that would be inappropriate elsewhere
+ * Starts up PolyGlot and does testing for OS/platform that would be
+ * inappropriate elsewhere
+ *
  * @author Draque Thompson
  */
 public class PolyGlot {
-    /**
-     * @param args the command line arguments: 
-     * args[0] = open file path (blank if none) 
-     * args[1] = working directory of PolyGlot (blank if none)
-     * args[2] = set to PGTUtils.True to skip OS Integration
-     */
-    public static void main(final String args[]) {
-        try {
-            setupNimbus();
 
-            java.awt.EventQueue.invokeLater(() -> {
+    private static final String PDFCOMMAND = "pdf-export";
+    private static final String EXCELTOCVSCOMMAND = "excel-to-cvs";
+    private static final String EXPORTTOEXCELCOMMAND = "export-to-excel";
+    private static final String EXCELTOCVSUSAGE = "PolyGlot_J8_Bridge " + EXCELTOCVSCOMMAND + " <EXCEL-FILE> <TARGET-WRITE> <SHEET-NUMBER>";
+    private static final String TRUESTRING = "true";
+    private static final String EXPORTTOEXCELUSAGE = "PolyGlot_J8_Bridge " + EXPORTTOEXCELCOMMAND + "<POLYGLOT-ARCHIVE> <TARGET-WRITE> <TRUE/FALSE SEPARATE DECLENSIONS>";
+    private static final String PDFEXPORTUSAGE = "Consult internal documentation.";
 
-                // catch all top level application killing throwables (and bubble up directly to ensure reasonable behavior)
+    public static void main(final String[] args) {
+        switch (args[0]) {
+            case PDFCOMMAND:
+                System.out.print(pdfExport(args));
+                break;
+            case EXCELTOCVSCOMMAND:
+                System.out.print(excelToCvs(args));
+                break;
+            case EXPORTTOEXCELCOMMAND:
+                System.out.print(exportToExcel(args));
+                break;
+            default:
+                System.out.print("ERROR: Unrecognized command: " + args[0]);
+        }
+    }
+
+    private static String pdfExport(String[] args) {
+        String ret;
+
+        if (args.length == 15) {
+            String readFrom = args[1];
+            String writeTo = args[2];
+            
+            try {
+                DictCore core = new DictCore();
+                core.readFile(readFrom);
+
                 try {
-                    String overridePath = args.length > 1 ? args[1] : "";
-                    ScrMainMenu s = null;
+                    PExportToPDF pdf = new PExportToPDF(core, writeTo);
+                    pdf.setTitleText(args[3]);
+                    pdf.setSubTitleText(args[4]);
+                    pdf.setCoverImagePath(args[5]);
+                    pdf.setForewardText(args[6]);
+                    pdf.setPrintAllConjugations(args[7].toLowerCase().equals(TRUESTRING));
+                    pdf.setPrintConLocal(args[8].toLowerCase().equals(TRUESTRING));
+                    pdf.setPrintGlossKey(args[9].toLowerCase().equals(TRUESTRING));
+                    pdf.setPrintGrammar(args[10].toLowerCase().equals(TRUESTRING));
+                    pdf.setPrintLocalCon(args[11].toLowerCase().equals(TRUESTRING));
+                    pdf.setPrintOrtho(args[12].toLowerCase().equals(TRUESTRING));
+                    pdf.setPrintPageNumber(args[13].toLowerCase().equals(TRUESTRING));
+                    pdf.setPrintWordEtymologies(args[14].toLowerCase().equals(TRUESTRING));
 
-                    // set DPI scaling to false (requires Java 9)
-                    System.getProperties().setProperty("Dsun.java2d.dpiaware", "false");
+                    pdf.print();
 
-                    if (canStart()) {
-                        try {
-                            // separated due to serious nature of Thowable vs Exception
-                            PFrame.setupOSSpecificCutCopyPaste();
-                            s = new ScrMainMenu(overridePath);
-                            s.setVisible(true);
-
-                            // open file if one is provided via arguments
-                            if (args.length > 0) {
-                                s.setFile(args[0]);
-                            }
-                        } catch (ArrayIndexOutOfBoundsException e) {
-                            IOHandler.writeErrorLog(e, "Problem with top level PolyGlot arguments.");
-                            InfoBox.error("Unable to start", "Unable to open PolyGlot main frame: \n"
-                                    + e.getMessage() + "\n"
-                                            + "Problem with top level PolyGlot arguments.", null);
-                        } catch (Exception e) { // split up for logical clarity... migt want to differn
-                            IOHandler.writeErrorLog(e);
-                            InfoBox.error("Unable to start", "Unable to open PolyGlot main frame: \n"
-                                    + e.getMessage() + "\n"
-                                            + "Please contact developer (draquemail@gmail.com) for assistance.", null);
-
-                            if (s != null) {
-                                s.dispose();
-                            }
-                        }
-                    }
-                } catch (Throwable t) {
-                    InfoBox.error("PolyGlot Error", "A serious error has occurred: " + t.getLocalizedMessage(), null);
-                    IOHandler.writeErrorLog(t);
-                    throw t;
+                    ret = "SUCCESS";
+                } catch (IOException e) {
+                    ret = "ERROR: Unable to write to file: " + e.getLocalizedMessage();
                 }
-            });
-        } catch (Exception e) {
-            IOHandler.writeErrorLog(e, "Startup Exception");
-            InfoBox.error("PolyGlot Error", "A serious error has occurred: " + e.getLocalizedMessage(), null);
-            throw e;
-        }
-    }
-    
-    private static void setupNimbus() {
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
+            } catch (IOException | IllegalStateException e) {
+                ret = "ERROR: Unable to read PolyGlot file: " + readFrom;
+            } catch (FontFormatException e) {
+                ret = "ERROR: Unable to load font from PolyGlot archive: " + e.getLocalizedMessage();
             }
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException e) {
-            java.util.logging.Logger.getLogger(ScrMainMenu.class.getName()).log(java.util.logging.Level.SEVERE, null, e);
-            IOHandler.writeErrorLog(e);
-        }
-    }
-    
-    /**
-     * Tests whether PolyGlot can start, informs user of startup problems.
-     * @return 
-     */
-    private static boolean canStart() {
-        String startProblems = "";
-        boolean ret = true;
-        
-        // Test for minimum version of Java (8)
-        String jVer = System.getProperty("java.version");
-        if (jVer.startsWith("1.5") || jVer.startsWith("1.6") || jVer.startsWith("1.7")) {
-            startProblems += "Unable to start PolyGlot without Java 8 or higher.\n";
+        } else {
+            ret = "ERROR: Wrong number of arguments given for comand.\nUsage: " + PDFEXPORTUSAGE;
         }
 
-        // keep people from running PolyGlot from within a zip file...
-        if (System.getProperty("user.dir").toLowerCase().startsWith("c:\\windows\\system")) {
-            startProblems += "PolyGlot cannot be run from within a zip archive. Please unzip all files to a folder.\n";
-        }
-
-        try {
-            // Test for JavaFX and inform user that it is not present, they cannot run PolyGlot
-            ScrMainMenu.class.getClassLoader().loadClass("javafx.embed.swing.JFXPanel");
-        } catch (ClassNotFoundException e) {
-            IOHandler.writeErrorLog(e);
-            startProblems += "Unable to load Java FX. Download and install to use PolyGlot ";
-        }
-        
-        if (startProblems.length() != 0) {
-            InfoBox.error("Unable to start PolyGlot", startProblems, null);
-            ret = false;
-        }
-        
         return ret;
     }
-    
-        private static boolean shouldUseOSInegration(String args[]) {
-        return args == null || args.length < 3 || !args[2].equals(PGTUtil.True);
+
+    private static String exportToExcel(String[] args) {
+        String ret;
+
+        if (args.length == 4) {
+            String exportFrom = args[1];
+            String exportTo = args[2];
+            boolean separateDeclensions = args[3].toLowerCase().equals(TRUESTRING);
+
+            try {
+                DictCore core = new DictCore();
+                core.readFile(exportFrom);
+
+                try {
+                    ExcelExport.exportExcelDict(exportTo, core, separateDeclensions);
+                    ret = "SUCCESS";
+                } catch (IOException e) {
+                    ret = "ERROR: Unable to export to: " + exportTo;
+                }
+            } catch (IOException | IllegalStateException ex) {
+                ret = "ERROR: Unable to read PolyGlot file: " + exportFrom;
+            } catch (FontFormatException e) {
+                ret = "ERROR: Unable to load font from PolyGlot archive: " + e.getLocalizedMessage();
+            }
+
+        } else {
+            ret = "ERROR: Wring number of arguments given for command.\nUsage: " + EXPORTTOEXCELUSAGE;
+        }
+
+        return ret;
     }
 
-    public static boolean testIsBeta() {
-        return IOHandler.fileExists("lib/BETA_WARNING.txt");
+    private static String excelToCvs(String[] args) {
+        String ret;
+
+        if (args.length == 4) {
+            String excelFile = args[1];
+            String targetWrite = args[2];
+
+            try {
+                int sheet = Integer.parseInt(args[3]);
+                ExcelToCsv.readExcel(excelFile, targetWrite, sheet);
+                ret = "SUCCESS";
+            } catch (NumberFormatException e) {
+                ret = "ERROR: Argument 3 must be an integer value.\nUsage: " + EXCELTOCVSUSAGE;
+            } catch (FileNotFoundException e) {
+                ret = "ERROR: File nout found: " + excelFile;
+            } catch (IOException e) {
+                ret = "ERROR: Unable to write to file: " + targetWrite + " due to: " + e.getLocalizedMessage();
+            } catch (InvalidFormatException e) {
+                ret = "ERROR: Unrecognized Excel format.";
+            } catch (Exception e) {
+                ret = "Error: Unable to convert Excel file: " + e.getLocalizedMessage();
+            }
+        } else {
+            ret = "ERROR: Wrong number of args for cvs conversion.\nUsage: " + EXCELTOCVSUSAGE;
+        }
+
+        return ret;
     }
 }

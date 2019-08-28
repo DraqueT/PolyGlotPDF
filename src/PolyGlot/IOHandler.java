@@ -21,7 +21,6 @@ package PolyGlot;
 
 import PolyGlot.Nodes.LogoNode;
 import PolyGlot.ManagersCollections.LogoCollection;
-import PolyGlot.CustomControls.InfoBox;
 import PolyGlot.ManagersCollections.ImageCollection;
 import PolyGlot.ManagersCollections.OptionsManager;
 import PolyGlot.ManagersCollections.ReversionManager;
@@ -43,7 +42,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
@@ -54,8 +52,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Iterator;
@@ -70,7 +66,6 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.poi.util.IOUtils;
 import org.xml.sax.SAXException;
 
@@ -267,21 +262,15 @@ public class IOHandler {
     /**
      * Deletes options file
      * @param core 
+     * @throws java.net.URISyntaxException 
      */
-    public static void deleteIni(DictCore core) {
+    public static void deleteIni(DictCore core) throws URISyntaxException {
         File f = new File(core.getWorkingDirectory() + PGTUtil.polyGlotIni);        
         if (!f.exists()) {
             return;
         }
         
-        try {
-            f.delete();
-        } catch (Exception e) {
-            // can't write to folder, so don't bother trying to write log file...
-            // IOHandler.writeErrorLog(e);
-            InfoBox.error("Permissions Error", "PolyGlot lacks permissions to write to its native folder.\n"
-                    + "Please move to a folder with full write permissions: " + e.getLocalizedMessage(), null);
-        }
+        f.delete();
     }
 
     /**
@@ -632,8 +621,9 @@ public class IOHandler {
      *
      * @param core
      * @throws IOException on failure or lack of permission to write
+     * @throws java.net.URISyntaxException
      */
-    public static void saveOptionsIni(DictCore core) throws IOException {
+    public static void saveOptionsIni(DictCore core) throws IOException, URISyntaxException {
 
         try (Writer f0 = new BufferedWriter(new OutputStreamWriter(
                 new FileOutputStream(core.getWorkingDirectory()
@@ -751,65 +741,6 @@ public class IOHandler {
      */
     public static File getFileFromPath(String path) {
         return new File(path);
-    }
-    
-    /**
-     * Writes to the PolyGlot error log file
-     * @param exception 
-     */
-    public static void writeErrorLog(Throwable exception) {
-        writeErrorLog(exception, "");
-    }
-    
-    /**
-     * Writes to the PolyGlot error log file
-     * @param exception 
-     * @param comment 
-     */
-    public static void writeErrorLog(Throwable exception, String comment) {
-        String errorMessage = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss").format(LocalDateTime.now());
-        errorMessage += "-" + exception.getLocalizedMessage() + "-" + exception.getClass().getName();
-        Throwable rootCause = ExceptionUtils.getRootCause(exception);
-        rootCause = rootCause == null ? exception : rootCause;
-        errorMessage += "\n" + ExceptionUtils.getStackTrace(rootCause);
-        BufferedWriter writer;
-        
-        if (!comment.isEmpty()) {
-            errorMessage = comment + ":\n" + errorMessage;
-        }
-        
-        File errorLog = new File(PGTUtil.errorLogFile);
-        
-        try {
-            String output;
-            
-            if (errorLog.exists()) {
-                Scanner logScanner = new Scanner(errorLog).useDelimiter("\\Z");
-                String contents = logScanner.hasNext() ? logScanner.next() : "";
-                
-                writer = new BufferedWriter(new FileWriter(errorLog));
-                int length = contents.length();
-                int newLength = length + errorMessage.length();
-                
-                if (newLength > PGTUtil.maxLogCharacters) {
-                    contents = contents.substring(newLength - PGTUtil.maxLogCharacters);
-                }
-                
-                output = contents + errorMessage + "\n";
-            } else {
-                writer = new BufferedWriter(new FileWriter(errorLog));
-                output = errorMessage + "\n";
-            }
-            
-            output = getSystemInformation() + "\n" + output;
-            
-            writer.write(output);
-            writer.close();
-        } catch (IOException e) {
-            // Fail silently. This fails almost exclusively due to being run in write protected folder, caught elsewhere
-            // do not log to written file for obvious reasons
-            // IOHandler.writeErrorLog(e);
-        }
     }
     
     /**
