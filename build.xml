@@ -35,7 +35,11 @@
     </target>
     <!-- END MAC BUNDLER MODIFICATION -->
     
-    <delete file="error_log.log" />
+    <target name="-post-jar" if="isMac">
+        <exec executable="/bin/bash">
+        <arg value="post_build.sh"/>
+        </exec>
+    </target>
     
     <import file="nbproject/build-impl.xml"/>
     <!--

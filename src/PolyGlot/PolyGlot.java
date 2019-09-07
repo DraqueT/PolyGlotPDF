@@ -39,20 +39,29 @@ public class PolyGlot {
     private static final String TRUESTRING = "true";
     private static final String EXPORTTOEXCELUSAGE = "PolyGlot_J8_Bridge " + EXPORTTOEXCELCOMMAND + "<POLYGLOT-ARCHIVE> <TARGET-WRITE> <TRUE/FALSE SEPARATE DECLENSIONS>";
     private static final String PDFEXPORTUSAGE = "Consult internal documentation.";
+    private static final String SUCCESS = "SUCCESS";
 
     public static void main(final String[] args) {
+        String consoleOut;
+        
         switch (args[0]) {
             case PDFCOMMAND:
-                System.out.print(pdfExport(args));
+                consoleOut = pdfExport(args);
                 break;
             case EXCELTOCVSCOMMAND:
-                System.out.print(excelToCvs(args));
+                consoleOut = excelToCvs(args);
                 break;
             case EXPORTTOEXCELCOMMAND:
-                System.out.print(exportToExcel(args));
+                consoleOut = exportToExcel(args);
                 break;
             default:
-                System.out.print("ERROR: Unrecognized command: " + args[0]);
+                consoleOut = "ERROR: Unrecognized command: " + args[0];
+        }
+        
+        if (consoleOut.equals(SUCCESS)) {
+            System.out.println(consoleOut);
+        } else {
+            System.err.println(consoleOut);
         }
     }
 
@@ -84,7 +93,7 @@ public class PolyGlot {
 
                     pdf.print();
 
-                    ret = "SUCCESS";
+                    ret = SUCCESS;
                 } catch (IOException e) {
                     ret = "ERROR: Unable to write to file: " + e.getLocalizedMessage();
                 }
@@ -114,7 +123,7 @@ public class PolyGlot {
 
                 try {
                     ExcelExport.exportExcelDict(exportTo, core, separateDeclensions);
-                    ret = "SUCCESS";
+                    ret = SUCCESS;
                 } catch (IOException e) {
                     ret = "ERROR: Unable to export to: " + exportTo;
                 }
@@ -141,7 +150,7 @@ public class PolyGlot {
             try {
                 int sheet = Integer.parseInt(args[3]);
                 ExcelToCsv.readExcel(excelFile, targetWrite, sheet);
-                ret = "SUCCESS";
+                ret = SUCCESS;
             } catch (NumberFormatException e) {
                 ret = "ERROR: Argument 3 must be an integer value.\nUsage: " + EXCELTOCVSUSAGE;
             } catch (FileNotFoundException e) {

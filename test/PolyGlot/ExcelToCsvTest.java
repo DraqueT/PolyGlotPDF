@@ -67,6 +67,7 @@ public class ExcelToCsvTest {
         
         OutputInterceptor interceptor = new OutputInterceptor(System.out);
         System.setOut(interceptor);
+        System.setErr(interceptor);
         
         PolyGlot.main(args);
         
@@ -92,6 +93,7 @@ public class ExcelToCsvTest {
         
         OutputInterceptor interceptor = new OutputInterceptor(System.out);
         System.setOut(interceptor);
+        System.setErr(interceptor);
         
         PolyGlot.main(args);
         
@@ -117,6 +119,7 @@ public class ExcelToCsvTest {
         
         OutputInterceptor interceptor = new OutputInterceptor(System.out);
         System.setOut(interceptor);
+        System.setErr(interceptor);
         
         PolyGlot.main(args);
         
@@ -144,6 +147,7 @@ public class ExcelToCsvTest {
         
         OutputInterceptor interceptor = new OutputInterceptor(System.out);
         System.setOut(interceptor);
+        System.setErr(interceptor);
         
         PolyGlot.main(args);
         
@@ -167,6 +171,7 @@ public class ExcelToCsvTest {
         
         OutputInterceptor interceptor = new OutputInterceptor(System.out);
         System.setOut(interceptor);
+        System.setErr(interceptor);
         
         PolyGlot.main(args);
         
