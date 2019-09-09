@@ -36,8 +36,7 @@ public class PolyGlot {
     private static final String EXCELTOCVSCOMMAND = "excel-to-cvs";
     private static final String EXPORTTOEXCELCOMMAND = "export-to-excel";
     private static final String EXCELTOCVSUSAGE = "PolyGlot_J8_Bridge " + EXCELTOCVSCOMMAND + " <EXCEL-FILE> <TARGET-WRITE> <SHEET-NUMBER>";
-    private static final String TRUESTRING = "true";
-    private static final String EXPORTTOEXCELUSAGE = "PolyGlot_J8_Bridge " + EXPORTTOEXCELCOMMAND + "<POLYGLOT-ARCHIVE> <TARGET-WRITE> <TRUE/FALSE SEPARATE DECLENSIONS>";
+    private static final String EXPORTTOEXCELUSAGE = "PolyGlot_J8_Bridge " + EXPORTTOEXCELCOMMAND + " <POLYGLOT-ARCHIVE> <TARGET-WRITE> <T/F SEPARATE DECLENSIONS>";
     private static final String PDFEXPORTUSAGE = "Consult internal documentation.";
     private static final String SUCCESS = "SUCCESS";
 
@@ -82,14 +81,14 @@ public class PolyGlot {
                     pdf.setSubTitleText(args[4]);
                     pdf.setCoverImagePath(args[5]);
                     pdf.setForewardText(args[6]);
-                    pdf.setPrintAllConjugations(args[7].toLowerCase().equals(TRUESTRING));
-                    pdf.setPrintConLocal(args[8].toLowerCase().equals(TRUESTRING));
-                    pdf.setPrintGlossKey(args[9].toLowerCase().equals(TRUESTRING));
-                    pdf.setPrintGrammar(args[10].toLowerCase().equals(TRUESTRING));
-                    pdf.setPrintLocalCon(args[11].toLowerCase().equals(TRUESTRING));
-                    pdf.setPrintOrtho(args[12].toLowerCase().equals(TRUESTRING));
-                    pdf.setPrintPageNumber(args[13].toLowerCase().equals(TRUESTRING));
-                    pdf.setPrintWordEtymologies(args[14].toLowerCase().equals(TRUESTRING));
+                    pdf.setPrintAllConjugations(args[7].toUpperCase().equals(PGTUtil.True));
+                    pdf.setPrintConLocal(args[8].toUpperCase().equals(PGTUtil.True));
+                    pdf.setPrintGlossKey(args[9].toUpperCase().equals(PGTUtil.True));
+                    pdf.setPrintGrammar(args[10].toUpperCase().equals(PGTUtil.True));
+                    pdf.setPrintLocalCon(args[11].toUpperCase().equals(PGTUtil.True));
+                    pdf.setPrintOrtho(args[12].toUpperCase().equals(PGTUtil.True));
+                    pdf.setPrintPageNumber(args[13].toUpperCase().equals(PGTUtil.True));
+                    pdf.setPrintWordEtymologies(args[14].toUpperCase().equals(PGTUtil.True));
 
                     pdf.print();
 
@@ -115,7 +114,7 @@ public class PolyGlot {
         if (args.length == 4) {
             String exportFrom = args[1];
             String exportTo = args[2];
-            boolean separateDeclensions = args[3].toLowerCase().equals(TRUESTRING);
+            boolean separateDeclensions = args[3].toUpperCase().equals(PGTUtil.True);
 
             try {
                 DictCore core = new DictCore();
