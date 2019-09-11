@@ -22,6 +22,9 @@ package PolyGlot;
 import java.awt.FontFormatException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 
 /**
@@ -66,6 +69,8 @@ public class PolyGlot {
 
     private static String pdfExport(String[] args) {
         String ret;
+        
+        System.setErr(new OutputFilter(System.err, "WARNING"));// eliminate warnings from the output
 
         if (args.length == 15) {
             String readFrom = args[1];
@@ -111,7 +116,8 @@ public class PolyGlot {
     private static String exportToExcel(String[] args) {
         String ret;
 
-        if (args.length == 4) {
+        // if hidden, 5th argument is true, return error stack trace
+        if (args.length == 4 || (args.length == 5 && args[4].equals(PGTUtil.True))) {
             String exportFrom = args[1];
             String exportTo = args[2];
             boolean separateDeclensions = args[3].toUpperCase().equals(PGTUtil.True);
@@ -124,16 +130,28 @@ public class PolyGlot {
                     ExcelExport.exportExcelDict(exportTo, core, separateDeclensions);
                     ret = SUCCESS;
                 } catch (IOException e) {
-                    ret = "ERROR: Unable to export to: " + exportTo;
+                    if (args.length == 5 && args[4].equals(PGTUtil.True)) {
+                        ret = ExceptionUtils.getStackTrace(e);
+                    } else {
+                        ret = "ERROR: Unable to export to: " + exportTo;
+                    }
                 }
-            } catch (IOException | IllegalStateException ex) {
-                ret = "ERROR: Unable to read PolyGlot file: " + exportFrom;
+            } catch (IOException | IllegalStateException e) {
+                if (args.length == 5 && args[4].equals(PGTUtil.True)) {
+                    ret = ExceptionUtils.getStackTrace(e);
+                } else {
+                    ret = "ERROR: Unable to read PolyGlot file: " + exportFrom;
+                }
             } catch (FontFormatException e) {
-                ret = "ERROR: Unable to load font from PolyGlot archive: " + e.getLocalizedMessage();
+                if (args.length == 5 && args[4].equals(PGTUtil.True)) {
+                    ret = ExceptionUtils.getStackTrace(e);
+                } else {
+                    ret = "ERROR: Unable to load font from PolyGlot archive: " + e.getLocalizedMessage();
+                }
             }
 
         } else {
-            ret = "ERROR: Wring number of arguments given for command.\nUsage: " + EXPORTTOEXCELUSAGE;
+            ret = "ERROR: Wrong number of arguments given for command.\nUsage: " + EXPORTTOEXCELUSAGE;
         }
 
         return ret;
@@ -166,5 +184,28 @@ public class PolyGlot {
         }
 
         return ret;
+    }
+    
+    public static class OutputFilter extends PrintStream {
+        private final String filter;
+        private String intercepted = "";
+        
+
+        public OutputFilter(OutputStream out, String _filter) {
+            super(out, true);
+            filter = _filter;
+        }
+
+        @Override
+        public void print(String s) {
+            if (!filter.isEmpty() && !s.contains(filter)) {
+                super.print(s);
+                intercepted += s;
+            }
+        }
+
+        public String getIntercepted() {
+            return intercepted;
+        }
     }
 }

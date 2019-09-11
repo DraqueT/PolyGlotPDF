@@ -65,7 +65,7 @@ public class ExcelExport {
         decMan = core.getDeclensionManager();
         
         conFont.setFontName(core.getPropertiesManager().getFontCon().getFontName());
-        boldFont.setBoldweight(Font.BOLDWEIGHT_BOLD);
+        boldFont.setBold(true);
         localStyle.setWrapText(true);
         conStyle.setWrapText(true);
         conStyle.setFont(conFont);

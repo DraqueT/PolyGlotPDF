@@ -50,23 +50,26 @@ public class ExportToExcelTest {
         String[] args = {"export-to-excel",
             sourceFile,
             targetFile,
-            "true"
+            PGTUtil.True
         };
         
-        OutputInterceptor interceptor = new OutputInterceptor(System.out);
-        System.setOut(interceptor);
-        System.setErr(interceptor);
+        OutputInterceptor output = new OutputInterceptor(System.out);
+        OutputInterceptor errors = new OutputInterceptor(System.err);
+        System.setOut(output);
+        System.setErr(errors);
         
         PolyGlot.main(args);
         
-        String result = interceptor.getIntercepted();
+        String resultOut = output.getIntercepted();
+        String resultErr = errors.getIntercepted();
         
         File resultFile = new File(targetFile);
         File expectedFile = new File(checkAgainst);
-        assert(result.equals("SUCCESS"));
+        assert(resultErr.equals(""));
+        assert(resultOut.equals("SUCCESS"));
         assert(resultFile.exists());
         assert(expectedFile.exists());
-        assert(FileUtils.contentEquals(expectedFile, resultFile));
+        assert(FileUtils.contentEquals(expectedFile, resultFile)); // this fails due to user change sometimes?
         cleanup();
     }
     
@@ -78,7 +81,7 @@ public class ExportToExcelTest {
         String[] args = {"export-to-excel",
             sourceFile + "BADFILE",
             targetFile,
-            "true"
+            PGTUtil.True
         };
         
         OutputInterceptor interceptor = new OutputInterceptor(System.out);
@@ -103,20 +106,21 @@ public class ExportToExcelTest {
         String[] args = {"export-to-excel",
             sourceFile,
             targetFile,
-            "true",
+            PGTUtil.True,
             "ZOT"
         };
         
-        OutputInterceptor interceptor = new OutputInterceptor(System.out);
-        System.setOut(interceptor);
-        System.setErr(interceptor);
+        OutputInterceptor output = new OutputInterceptor(System.out);
+        OutputInterceptor error = new OutputInterceptor(System.err);
+        System.setOut(output);
+        System.setErr(error);
         
         PolyGlot.main(args);
         
-        String result = interceptor.getIntercepted();
+        String resultErr = error.getIntercepted();
         
         File resultFile = new File(targetFile);
-        assert(result.equals("ERROR: Wring number of arguments given for command.\nUsage: PolyGlot_J8_Bridge export-to-excel<POLYGLOT-ARCHIVE> <TARGET-WRITE> <TRUE/FALSE SEPARATE DECLENSIONS>"));
+        assert(resultErr.startsWith("ERROR: Wrong number of arguments given for command."));
         assert(!resultFile.exists());
         cleanup();
     }
@@ -139,7 +143,7 @@ public class ExportToExcelTest {
         String result = interceptor.getIntercepted();
         
         File resultFile = new File(targetFile);
-        assert(result.equals("ERROR: Wring number of arguments given for command.\nUsage: PolyGlot_J8_Bridge export-to-excel<POLYGLOT-ARCHIVE> <TARGET-WRITE> <TRUE/FALSE SEPARATE DECLENSIONS>"));
+        assert(result.startsWith("ERROR: Wrong number of arguments given for command."));
         assert(!resultFile.exists());
         cleanup();
     }

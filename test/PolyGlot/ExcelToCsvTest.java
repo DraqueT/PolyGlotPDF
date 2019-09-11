@@ -65,17 +65,20 @@ public class ExcelToCsvTest {
             sheetNum
         };
         
-        OutputInterceptor interceptor = new OutputInterceptor(System.out);
-        System.setOut(interceptor);
-        System.setErr(interceptor);
+        OutputInterceptor output = new OutputInterceptor(System.out);
+        OutputInterceptor errors = new OutputInterceptor(System.err);
+        System.setOut(output);
+        System.setErr(errors);
         
         PolyGlot.main(args);
         
-        String result = interceptor.getIntercepted();
+        String resultOut = output.getIntercepted();
+        String resultErr = errors.getIntercepted();
         String outputFile = readFile(targetFile);
         
+        assertEquals(resultErr, "");
+        assertEquals(resultOut, "SUCCESS");
         assertEquals(sheet1Expected, outputFile);
-        assertEquals(result, "SUCCESS");
         
         new File (targetFile).delete();
     }
@@ -163,7 +166,6 @@ public class ExcelToCsvTest {
     @Test
     public void testReadExcelSheetTooFewArgs() throws Exception {
         System.out.println("readExcel Sheet 1");
-        String sheetNum = "X";
         String[] args = {
             "excel-to-cvs",
             excelFile
@@ -204,5 +206,4 @@ public class ExcelToCsvTest {
         
         return ret;
     }
-    //TODO: TEST CALLS TO MAIN
 }

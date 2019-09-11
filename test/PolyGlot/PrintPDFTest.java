@@ -91,14 +91,12 @@ public class PrintPDFTest {
             "True",
             "BLOO"
         };
-
-        OutputInterceptor interceptor = new OutputInterceptor(System.out);
-        System.setOut(interceptor);
-        System.setErr(interceptor);
         
         PolyGlot.main(args);
         
-        String result = interceptor.getIntercepted();
+        PolyGlot.OutputFilter errors = (PolyGlot.OutputFilter)System.err;
+        
+        String result = errors.getIntercepted();
 
         File f = new File(testPdfPath);
         assert(!f.exists());
@@ -118,18 +116,16 @@ public class PrintPDFTest {
             "test/TestResources/EmptyImage.png",
             "Test Forward Text"
         };
-
-        OutputInterceptor interceptor = new OutputInterceptor(System.out);
-        System.setOut(interceptor);
-        System.setErr(interceptor);
         
         PolyGlot.main(args);
         
-        String result = interceptor.getIntercepted();
+        PolyGlot.OutputFilter errors = (PolyGlot.OutputFilter)System.err;
+        
+        String resultErr = errors.getIntercepted();
 
         File f = new File(testPdfPath);
         assert(!f.exists());
-        assert(result.equals("ERROR: Wrong number of arguments given for comand.\nUsage: Consult internal documentation."));
+        assert(resultErr.equals("ERROR: Wrong number of arguments given for comand.\nUsage: Consult internal documentation."));
         cleanup();
     }
     
@@ -153,14 +149,11 @@ public class PrintPDFTest {
             "TRUE",
             "True"
         };
-
-        OutputInterceptor interceptor = new OutputInterceptor(System.out);
-        System.setOut(interceptor);
-        System.setErr(interceptor);
         
         PolyGlot.main(args);
         
-        String result = interceptor.getIntercepted();
+        PolyGlot.OutputFilter errors = (PolyGlot.OutputFilter)System.err;
+        String result = errors.getIntercepted();
 
         File f = new File(testPdfPath);
         assert(!f.exists());
