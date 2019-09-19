@@ -46,24 +46,29 @@ public class PolyGlot {
     public static void main(final String[] args) {
         String consoleOut;
         
-        switch (args[0]) {
-            case PDFCOMMAND:
-                consoleOut = pdfExport(args);
-                break;
-            case EXCELTOCVSCOMMAND:
-                consoleOut = excelToCvs(args);
-                break;
-            case EXPORTTOEXCELCOMMAND:
-                consoleOut = exportToExcel(args);
-                break;
-            default:
-                consoleOut = "ERROR: Unrecognized command: " + args[0];
-        }
-        
-        if (consoleOut.equals(SUCCESS)) {
-            System.out.println(consoleOut);
+        if (args.length > 0) {
+            switch (args[0]) {
+                case PDFCOMMAND:
+                    consoleOut = pdfExport(args);
+                    break;
+                case EXCELTOCVSCOMMAND:
+                    consoleOut = excelToCvs(args);
+                    break;
+                case EXPORTTOEXCELCOMMAND:
+                    consoleOut = exportToExcel(args);
+                    break;
+                default:
+                    consoleOut = "ERROR: Unrecognized command: " + args[0];
+            }
+
+            if (consoleOut.equals(SUCCESS)) {
+                System.out.println(consoleOut);
+            } else {
+                System.err.println(consoleOut);
+            }
         } else {
-            System.err.println(consoleOut);
+            System.err.println("PolyGlot Java8 Bridge cannot be called without a command. Commands:\n"
+                    + PDFCOMMAND + "\n" + EXCELTOCVSCOMMAND + "\n" + EXPORTTOEXCELCOMMAND);
         }
     }
 

@@ -170,7 +170,7 @@ public class PExportToPDF {
             template = new PdfFormXObject(new Rectangle(pageNumberX, pageNumberY, 30, 30));
             canvas = new PdfCanvas(template, pdf);
             HeaderHandler headerHandler = new HeaderHandler();
-            headerHandler.setHeader(core.getPropertiesManager().getLangName());
+            headerHandler.setHeader(WebInterface.getTextFromHtml(core.getPropertiesManager().getLangName()));
             pdf.addEventHandler(PdfDocumentEvent.START_PAGE, headerHandler);
         }
 
@@ -962,7 +962,7 @@ public class PExportToPDF {
             if (core.getPropertiesManager().getLangName().length() == 0) {
                 varChunk = new Text("LANGUAGE GUIDE");
             } else {
-                varChunk = new Text(core.getPropertiesManager().getLangName());
+                varChunk = new Text(WebInterface.getTextFromHtml(core.getPropertiesManager().getLangName()));
             }
         } else {
             varChunk = new Text(titleText);
@@ -988,7 +988,8 @@ public class PExportToPDF {
         }
 
         if (core.getPropertiesManager().getCopyrightAuthorInfo().length() != 0) {
-            varChunk = new Text(core.getPropertiesManager().getCopyrightAuthorInfo());
+            String copyRight = WebInterface.getTextFromHtml(core.getPropertiesManager().getCopyrightAuthorInfo());
+            varChunk = new Text(copyRight);
             varChunk.setTextAlignment(TextAlignment.LEFT);
             varChunk.setFontSize(defFontSize - 2);
             ret.add(varChunk);

@@ -1,0 +1,7 @@
+/nbproject/
+build
+target
+PolyGlot_error_log.log
+PolyGlot_error.log
+java_8_bridge.zip
+*.ini
