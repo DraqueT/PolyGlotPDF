@@ -74,6 +74,7 @@ public class PolyGlot {
 
     private static String pdfExport(String[] args) {
         String ret;
+        PrintStream origErr = System.err;
         
         System.setErr(new OutputFilter(System.err, "WARNING"));// eliminate warnings from the output
 
@@ -115,6 +116,8 @@ public class PolyGlot {
             ret = "ERROR: Wrong number of arguments given for comand.\nUsage: " + PDFEXPORTUSAGE;
         }
 
+        // restore to original error stream 
+        System.setErr(origErr);
         return ret;
     }
 
