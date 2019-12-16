@@ -1,0 +1,28 @@
+<component name="libraryTable">
+  <library name="lib1">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/dist/lib/slf4j-jdk14-1.7.21.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/commons-io-2.4.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/slf4j-api-1.7.21.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/commons-compress-1.19.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/poi-4.1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/itext7-kernel-7.0.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/poi-ooxml-schemas-4.1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/xmlbeans-3.1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/poi-scratchpad-4.1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/poi-examples-4.1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/commons-collections4-4.4.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/poi-excelant-4.1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/jorbis-0.0.15.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/jsoup-1.12.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/itext7-layout-7.0.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/itext7-io-7.0.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/poi-ooxml-4.1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/commons-lang3-3.5.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/itext7-font-asian-7.0.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/xeger-1.0-SNAPSHOT.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

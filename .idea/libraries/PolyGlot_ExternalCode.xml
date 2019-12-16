@@ -1,0 +1,29 @@
+<component name="libraryTable">
+  <library name="PolyGlot.ExternalCode">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/src/PolyGlot.ExternalCode/commons-compress-1.19.jar!/" />
+      <root url="jar://$PROJECT_DIR$/src/PolyGlot.ExternalCode/itext7-io-7.0.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/src/PolyGlot.ExternalCode/slf4j-jdk14-1.7.21.jar!/" />
+      <root url="jar://$PROJECT_DIR$/src/PolyGlot.ExternalCode/poi-excelant-4.1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/src/PolyGlot.ExternalCode/poi-ooxml-schemas-4.1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/src/PolyGlot.ExternalCode/itext7-layout-7.0.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/src/PolyGlot.ExternalCode/jorbis-0.0.15.jar!/" />
+      <root url="jar://$PROJECT_DIR$/src/PolyGlot.ExternalCode/poi-4.1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/src/PolyGlot.ExternalCode/slf4j-api-1.7.21.jar!/" />
+      <root url="jar://$PROJECT_DIR$/src/PolyGlot.ExternalCode/xmlbeans-3.1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/src/PolyGlot.ExternalCode/jsoup-1.12.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/src/PolyGlot.ExternalCode/commons-lang3-3.5.jar!/" />
+      <root url="jar://$PROJECT_DIR$/src/PolyGlot.ExternalCode/xeger-1.0-SNAPSHOT.jar!/" />
+      <root url="jar://$PROJECT_DIR$/src/PolyGlot.ExternalCode/poi-scratchpad-4.1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/src/PolyGlot.ExternalCode/itext7-kernel-7.0.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/src/PolyGlot.ExternalCode/automaton.jar!/" />
+      <root url="jar://$PROJECT_DIR$/src/PolyGlot.ExternalCode/commons-collections4-4.4.jar!/" />
+      <root url="jar://$PROJECT_DIR$/src/PolyGlot.ExternalCode/commons-io-2.4.jar!/" />
+      <root url="jar://$PROJECT_DIR$/src/PolyGlot.ExternalCode/itext7-font-asian-7.0.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/src/PolyGlot.ExternalCode/poi-examples-4.1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/src/PolyGlot.ExternalCode/poi-ooxml-4.1.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

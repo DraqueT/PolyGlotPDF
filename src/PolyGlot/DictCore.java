@@ -36,7 +36,6 @@ import PolyGlot.ManagersCollections.RomanizationManager;
 import PolyGlot.ManagersCollections.ToDoManager;
 import PolyGlot.ManagersCollections.VisualStyleManager;
 import PolyGlot.ManagersCollections.WordClassCollection;
-import java.awt.Color;
 import java.awt.FontFormatException;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -190,15 +189,6 @@ public class DictCore {
      */
     public Object getClipBoard() {
         return clipBoard;
-    }
-
-    /**
-     * Gets proper color for fields marked as required
-     *
-     * @return
-     */
-    public Color getRequiredColor() {
-        return new Color(255, 204, 204);
     }
 
     /**

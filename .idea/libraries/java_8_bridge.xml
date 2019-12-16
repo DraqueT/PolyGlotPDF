@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="java_8_bridge">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/java_8_bridge.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

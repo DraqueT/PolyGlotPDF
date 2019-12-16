@@ -492,16 +492,14 @@ public class PExportToPDF {
             }
 
             // print word etymology tree if appropriate
-            // TODO: correct how this aligns images
             if (printWordEtymologies && core.getEtymologyManager().hasEtymology(curWord)) {
                 BufferedImage etymImage = (new PPanelDrawEtymology(core, curWord)).getPanelImage();
 
                 // null image means there is no etymology for this word
                 if (etymImage != null) {
-                    //curLetterSec.add(dictEntry);
-                    //dictEntry = new Paragraph();
-                    dictEntry.add(new Text("\n").setFont(conFont));
-                    dictEntry.add(getScaledImage(etymImage, true));
+                    dictEntryWord.add(dictEntry);
+                    dictEntry = new Paragraph();
+                    dictEntryWord.add(getImageContainer(getScaledImage(etymImage, true)));
                 }
 
             }
@@ -515,17 +513,13 @@ public class PExportToPDF {
                         String cleanedText = StringEscapeUtils.unescapeHtml4((String) o) + "\n";
                         dictEntry.add(new Text(cleanedText).setFontSize(defFontSize).setFont(unicodeFont));
                     } else if (o instanceof BufferedImage) {
-                        // must convert buffered image to bytes because WHY DOES iTEXT 7 NOT DO THIS ITSELF.
-                        byte[] bytes = IOHandler.getBufferedImageByteArray((BufferedImage) o);
-                        Image pdfImage = new Image(ImageDataFactory.create(bytes));
-                        
                         if (!dictEntry.isEmpty()) {
                             dictEntry.setKeepTogether(true);
                             dictEntryWord.add(dictEntry);
                             dictEntry = new Paragraph();
                         }
                         
-                        dictEntryWord.add(pdfImage);
+                        dictEntryWord.add(getImageContainer(getScaledImage((BufferedImage) o, true)));
                     } else {
                         // Do nothing: May be expanded for further logic later
                     }
@@ -707,16 +701,14 @@ public class PExportToPDF {
             }
 
             // print word etymology tree if appropriate
-            // TODO: correct how this aligns images
             if (printWordEtymologies && core.getEtymologyManager().hasEtymology(curWord)) {
                 BufferedImage etymImage = (new PPanelDrawEtymology(core, curWord)).getPanelImage();
 
                 // null image means there is no etymology for this word
                 if (etymImage != null) {
-                    //curLetterSec.add(dictEntry);
-                    //dictEntry = new Paragraph();
-                    dictEntry.add(new Text("\n").setFont(conFont));
-                    dictEntry.add(getScaledImage(etymImage, true));
+                    curLetterSec.add(dictEntry);
+                    dictEntry = new Paragraph();
+                    dictEntryWord.add(getImageContainer(getScaledImage(etymImage, true)));
                 }
 
             }
@@ -730,17 +722,13 @@ public class PExportToPDF {
                         String cleanedText = StringEscapeUtils.unescapeHtml4((String) o) + "\n";
                         dictEntry.add(new Text(cleanedText).setFontSize(defFontSize).setFont(unicodeFont));
                     } else if (o instanceof BufferedImage) {
-                        // must convert buffered image to bytes because WHY DOES iTEXT 7 NOT DO THIS ITSELF.
-                        byte[] bytes = IOHandler.getBufferedImageByteArray((BufferedImage) o);
-                        Image pdfImage = new Image(ImageDataFactory.create(bytes));
-                        
                         if (!dictEntry.isEmpty()) {
                             dictEntry.setKeepTogether(true);
                             dictEntryWord.add(dictEntry);
                             dictEntry = new Paragraph();
                         }
                         
-                        dictEntryWord.add(pdfImage);
+                        dictEntryWord.add(getImageContainer(getScaledImage((BufferedImage) o, true)));
                     } else {
                         // Do nothing: May be expanded for further logic later
                     }
@@ -1186,6 +1174,14 @@ public class PExportToPDF {
             ret = ret.scaleToFit(scaler * imageWidth, scaler * imageHeight);
         }
 
+        return ret;
+    }
+    
+    private Table getImageContainer(Image image) {
+        Table ret = new Table(1);
+        Cell cell = new Cell();
+        cell.add(image);
+        ret.addCell(cell);
         return ret;
     }
 }

@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="PolyGlot_J8_Bridge">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/dist/PolyGlot_J8_Bridge.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

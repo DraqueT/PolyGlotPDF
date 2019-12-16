@@ -28,11 +28,16 @@ import org.junit.Test;
  */
 public class PrintPDFTest {
     
+    OutputInterceptor interceptor;
+    
     private final String testPdfPath = "test/TestResources/Lodenkur_TEST.pdf";
 
     public PrintPDFTest() {
         File f = new File(testPdfPath);
         cleanup();
+        interceptor = new OutputInterceptor(System.out);
+        System.setOut(interceptor);
+        System.setErr(interceptor);
     }
 
     @Test
@@ -55,10 +60,6 @@ public class PrintPDFTest {
             "TRUE",
             "True"
         };
-
-        OutputInterceptor interceptor = new OutputInterceptor(System.out);
-        System.setOut(interceptor);
-        System.setErr(interceptor);
         
         PolyGlot.main(args);
         
@@ -94,7 +95,7 @@ public class PrintPDFTest {
         
         PolyGlot.main(args);
         
-        PolyGlot.OutputFilter errors = (PolyGlot.OutputFilter)System.err;
+        OutputInterceptor errors = (OutputInterceptor)System.err;
         
         String result = errors.getIntercepted();
 
@@ -119,7 +120,7 @@ public class PrintPDFTest {
         
         PolyGlot.main(args);
         
-        PolyGlot.OutputFilter errors = (PolyGlot.OutputFilter)System.err;
+        OutputInterceptor errors = (OutputInterceptor)System.err;
         
         String resultErr = errors.getIntercepted();
 
@@ -152,7 +153,7 @@ public class PrintPDFTest {
         
         PolyGlot.main(args);
         
-        PolyGlot.OutputFilter errors = (PolyGlot.OutputFilter)System.err;
+        OutputInterceptor errors = (OutputInterceptor)System.err;
         String result = errors.getIntercepted();
 
         File f = new File(testPdfPath);
