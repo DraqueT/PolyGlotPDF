@@ -58,7 +58,8 @@ public class PrintPDFTest {
             "true",
             "true",
             "TRUE",
-            "True"
+            "True",
+            "X.XX"
         };
         
         PolyGlot.main(args);
@@ -90,7 +91,8 @@ public class PrintPDFTest {
             "true",
             "TRUE",
             "True",
-            "BLOO"
+            "BLOO",
+            "X.XX"
         };
         
         PolyGlot.main(args);
@@ -148,7 +150,8 @@ public class PrintPDFTest {
             "true",
             "true",
             "TRUE",
-            "True"
+            "True",
+            "X.XX"
         };
         
         PolyGlot.main(args);

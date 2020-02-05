@@ -78,7 +78,7 @@ public class PolyGlot {
         
         System.setErr(new OutputFilter(System.err, "WARNING"));// eliminate warnings from the output
 
-        if (args.length == 15) {
+        if (args.length == 16) {
             String readFrom = args[1];
             String writeTo = args[2];
             

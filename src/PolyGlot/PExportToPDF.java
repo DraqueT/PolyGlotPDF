@@ -121,6 +121,7 @@ public class PExportToPDF {
     private String titleText = "";
     private String subTitleText = "";
     private String log = "";
+    private String printVersion = "";
 
     /**
      * Exports language to presentable PDF
@@ -279,7 +280,7 @@ public class PExportToPDF {
             }
 
             document.add(new AreaBreak(AreaBreakType.NEXT_PAGE));
-            Paragraph fin = new Paragraph("Created with PolyGlot: Language Creation Tool Version " + core.getDisplayVersion() + "\n");
+            Paragraph fin = new Paragraph("Created with PolyGlot: Language Creation Tool Version " + printVersion + "\n");
             fin.add(new Link("Get PolyGlot Here", PdfAction.createURI(PGTUtil.homePage)).setUnderline());
             fin.add(new Text("\nPolyGlot Created By Draque Thompson"));
             fin.setFontSize(20);
@@ -1082,6 +1083,10 @@ public class PExportToPDF {
         this.printGlossKey = printGlossKey;
     }
 
+    public void setPrintVersion(String _printVersion) {
+        printVersion = _printVersion;
+    }
+    
     /**
      * This is code that allows for easily adding page numbers.
      */
