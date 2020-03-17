@@ -998,7 +998,7 @@ public class CustHandlerFactory {
                 } else if (blangRegexFontOvr) {
                     propertiesManager.setOverrideRegexFont(new String(ch, start, length).equals(PGTUtil.True));
                 } else if (bfontSize) {
-                    propertiesManager.setFontSize(Integer.parseInt(new String(ch, start, length)));
+                    propertiesManager.setFontSize(Double.parseDouble(new String(ch, start, length)));
                     bfontSize = false;
                 } else if (bfontStyle) {
                     propertiesManager.setFontStyle(Integer.parseInt(new String(ch, start, length)));

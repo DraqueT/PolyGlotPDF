@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2019, Draque Thompson, draquemail@gmail.com
+ * Copyright (c) 2014-2020, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
  * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
@@ -66,7 +66,6 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
-import org.apache.poi.util.IOUtils;
 import org.xml.sax.SAXException;
 
 /**
@@ -156,7 +155,7 @@ public class IOHandler {
 
     public static byte[] getByteArrayFromFile(File file) throws FileNotFoundException, IOException {
         try (InputStream inputStream = new FileInputStream(file)) {
-            return IOUtils.toByteArray(inputStream);
+            return inputStreamToByteArray(inputStream);
         }
     }
     
@@ -171,7 +170,7 @@ public class IOHandler {
         final File toByteArrayFile = new File(filePath);
         
         try (InputStream inputStream = new FileInputStream(toByteArrayFile)) {
-            ret = IOUtils.toByteArray(inputStream);
+            ret = inputStreamToByteArray(inputStream);
         }
         
         return ret;
@@ -560,7 +559,7 @@ public class IOHandler {
             while (reversion != null && i < reversionManager.getMaxReversionsCount()) {
                 tmpCore = new DictCore();
                 
-                reversionManager.addVersionToEnd(IOUtils.toByteArray(zipFile.getInputStream(reversion)),
+                reversionManager.addVersionToEnd(inputStreamToByteArray(zipFile.getInputStream(reversion)),
                         tmpCore.getLastSaveTime());
                 i++;
                 reversion = zipFile.getEntry(PGTUtil.reversionSavePath
@@ -570,7 +569,7 @@ public class IOHandler {
             // remember to load latest state in addition to all prior ones
             reversion = zipFile.getEntry(PGTUtil.dictFileName);
             tmpCore = new DictCore();
-            reversionManager.addVersionToEnd(IOUtils.toByteArray(zipFile.getInputStream(reversion)),
+            reversionManager.addVersionToEnd(inputStreamToByteArray(zipFile.getInputStream(reversion)),
                         tmpCore.getLastSaveTime());
         }
     }
@@ -794,7 +793,7 @@ public class IOHandler {
      */
     public byte[] getUnicodeFontByteArray() throws FileNotFoundException, IOException {
         try (InputStream localStream = this.getClass().getResourceAsStream(PGTUtil.UnicodeFontLocation)) {
-            return IOUtils.toByteArray(localStream);
+            return inputStreamToByteArray(localStream);
         }
     }
 
@@ -808,7 +807,19 @@ public class IOHandler {
      */
     public byte[] getUnicodeFontItalicByteArray() throws FileNotFoundException, IOException {
         try (InputStream localStream = this.getClass().getResourceAsStream(PGTUtil.UnicodeFontItalicLocation)) {
-            return IOUtils.toByteArray(localStream);
+            return inputStreamToByteArray(localStream);
         }
+    }
+    
+    public static byte[] inputStreamToByteArray(InputStream is) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        int nRead;
+        byte[] data = new byte[1024];
+        while ((nRead = is.read(data, 0, data.length)) != -1) {
+            buffer.write(data, 0, nRead);
+        }
+
+        buffer.flush();
+        return buffer.toByteArray();
     }
 }

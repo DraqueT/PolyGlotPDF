@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Draque Thompson
+ * Copyright (c) 2019-2020, Draque Thompson
  * All rights reserved.
  *
  * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
@@ -46,7 +46,9 @@ public class PolyGlot {
     public static void main(final String[] args) {
         String consoleOut;
         
-        if (args.length > 0) {
+        if (args.length == 0) {
+            Screens.ScrPrintToPDF.run();
+        } else if (args.length > 0) {
             switch (args[0]) {
                 case PDFCOMMAND:
                     consoleOut = pdfExport(args);

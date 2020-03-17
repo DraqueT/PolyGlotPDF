@@ -107,7 +107,7 @@ public class PExportToPDF {
     private final PdfFont conFont;
     private final PdfFont unicodeFont;
     private final PdfFont unicodeFontItalic;
-    private final int conFontSize;
+    private final float conFontSize;
     private boolean printLocalCon = false;
     private boolean printConLocal = false;
     private boolean printOrtho = false;
@@ -149,7 +149,7 @@ public class PExportToPDF {
             conFont = PdfFontFactory.createFont(conFontFile, PdfEncodings.IDENTITY_H, true);
         }
 
-        conFontSize = core.getPropertiesManager().getFontSize();
+        conFontSize = (float)core.getPropertiesManager().getFontSize();
         glossKey = getGlossKey();
     }
 

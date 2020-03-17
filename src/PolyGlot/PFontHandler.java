@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Draque Thompson
+ * Copyright (c) 2019-2020, Draque Thompson
  * All rights reserved.
  *
  * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
@@ -35,7 +35,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 import javax.swing.JLabel;
-import org.apache.poi.util.IOUtils;
 
 /**
  * Split out from IOHandler due to large portion devoted to handling fonts
@@ -72,7 +71,9 @@ public class PFontHandler {
 
                     try (FileOutputStream out = new FileOutputStream(tempFile)) {
                         try (InputStream inputStream = zipFile.getInputStream(fontEntry)) {
-                            IOUtils.copy(inputStream, out);
+                            byte[] buffer = new byte[inputStream.available()];
+                            inputStream.read(buffer);
+                            out.write(buffer);
                         }
 
                         try {
@@ -302,9 +303,9 @@ public class PFontHandler {
                 if (fontFile != null) {
                     try (FileInputStream fontInputStream = new FileInputStream(fontFile)) {
                         if (isConFont) {
-                            core.getPropertiesManager().setCachedFont(IOUtils.toByteArray(fontInputStream));
+                            core.getPropertiesManager().setCachedFont(IOHandler.inputStreamToByteArray(fontInputStream));
                         } else {
-                            core.getPropertiesManager().setCachedLocalFont(IOUtils.toByteArray(fontInputStream));
+                            core.getPropertiesManager().setCachedLocalFont(IOHandler.inputStreamToByteArray(fontInputStream));
                         }
                     }
                     byte[] buffer = new byte[1024];
