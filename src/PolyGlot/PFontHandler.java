@@ -58,6 +58,10 @@ public class PFontHandler {
     }
 
     private static void setFontFrom(String _path, DictCore core, boolean isConFont) throws IOException, FontFormatException {
+        if (!isConFont) { // PDF Printing does not currntly support local fonts, and it is causing trouble
+            return;
+        }
+        
         if (isFileZipArchive(_path)) {
             try (ZipFile zipFile = new ZipFile(_path)) {
                 ZipEntry fontEntry = isConFont
