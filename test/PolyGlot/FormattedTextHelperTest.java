@@ -172,8 +172,8 @@ public class FormattedTextHelperTest {
     @Test
     public void testSwtColorToItextColor() {
         Color awtc = Color.darkGray;
-        com.itextpdf.kernel.color.Color expResult = com.itextpdf.kernel.color.Color.DARK_GRAY;
-        com.itextpdf.kernel.color.Color result = FormattedTextHelper.swtColorToItextColor(awtc);
+        com.itextpdf.kernel.colors.Color expResult = com.itextpdf.kernel.colors.ColorConstants.DARK_GRAY;
+        com.itextpdf.kernel.colors.Color result = FormattedTextHelper.swtColorToItextColor(awtc);
         assertEquals(expResult, result);
     }   
 }

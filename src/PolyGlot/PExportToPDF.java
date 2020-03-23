@@ -33,7 +33,7 @@ import PolyGlot.Nodes.WordClass;
 import com.itextpdf.io.font.FontConstants;
 import com.itextpdf.io.font.PdfEncodings;
 import com.itextpdf.io.image.ImageDataFactory;
-import com.itextpdf.kernel.color.Color;
+import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.events.Event;
 import com.itextpdf.kernel.events.IEventHandler;
 import com.itextpdf.kernel.events.PdfDocumentEvent;
@@ -50,7 +50,7 @@ import com.itextpdf.kernel.pdf.canvas.draw.SolidLine;
 import com.itextpdf.kernel.pdf.xobject.PdfFormXObject;
 import com.itextpdf.layout.ColumnDocumentRenderer;
 import com.itextpdf.layout.Document;
-import com.itextpdf.layout.border.SolidBorder;
+import com.itextpdf.layout.borders.SolidBorder;
 import com.itextpdf.layout.element.AreaBreak;
 import com.itextpdf.layout.element.Cell;
 import com.itextpdf.layout.element.Div;
@@ -63,6 +63,7 @@ import com.itextpdf.layout.element.Text;
 import com.itextpdf.layout.property.AreaBreakType;
 import com.itextpdf.layout.property.Property;
 import com.itextpdf.layout.property.TextAlignment;
+import com.itextpdf.layout.property.UnitValue;
 import com.itextpdf.layout.property.VerticalAlignment;
 import com.itextpdf.layout.renderer.DocumentRenderer;
 import java.awt.image.BufferedImage;
@@ -284,11 +285,11 @@ public class PExportToPDF {
             fin.add(new Link("Get PolyGlot Here", PdfAction.createURI(PGTUtil.homePage)).setUnderline());
             fin.add(new Text("\nPolyGlot Created By Draque Thompson"));
             fin.setFontSize(20);
-            fin.setFontColor(Color.LIGHT_GRAY);
+            fin.setFontColor(ColorConstants.LIGHT_GRAY);
             document.showTextAligned(fin, 297.5f, 400, document.getPdfDocument()
                     .getNumberOfPages(), TextAlignment.CENTER, VerticalAlignment.MIDDLE, 0);
             fin = new Paragraph("iText7 used in the creation of this document. See Polyglot documentation for full license.");
-            fin.setFontColor(Color.LIGHT_GRAY);
+            fin.setFontColor(ColorConstants.LIGHT_GRAY);
             fin.setFontSize(8);
             document.showTextAligned(fin, 297.5f, 100, document.getPdfDocument()
                     .getNumberOfPages(), TextAlignment.CENTER, VerticalAlignment.MIDDLE, 0);
@@ -544,7 +545,7 @@ public class PExportToPDF {
             curLetterSec.add(dictEntryWord);
 
             LineSeparator ls = new LineSeparator(new SolidLine(1f));
-            ls.setWidthPercent(30);
+            ls.setWidth(UnitValue.createPercentValue(30));
             ls.setMarginTop(5);
             curLetterSec.add(ls);
         }
@@ -745,7 +746,7 @@ public class PExportToPDF {
 
             // add line break
             LineSeparator ls = new LineSeparator(new SolidLine(1f));
-            ls.setWidthPercent(30);
+            ls.setWidth(UnitValue.createPercentValue(30));
             ls.setMarginTop(5);
             curLetterSec.add(ls);
         }

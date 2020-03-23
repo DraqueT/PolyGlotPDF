@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2018, Draque Thompson
+ * Copyright (c) 2015-2020, Draque Thompson
  * All rights reserved.
  *
  * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
@@ -169,60 +169,60 @@ public class FormattedTextHelper {
         return ret;
     }
     
-    public static com.itextpdf.kernel.color.Color swtColorToItextColor(Color awtc) {
-        com.itextpdf.kernel.color.Color ret = com.itextpdf.kernel.color.Color.BLACK;
+    public static com.itextpdf.kernel.colors.Color swtColorToItextColor(Color awtc) {
+        com.itextpdf.kernel.colors.Color ret = com.itextpdf.kernel.colors.ColorConstants.BLACK;
         if (awtc == Color.BLACK) {
-            ret = com.itextpdf.kernel.color.Color.BLACK;
+            ret = com.itextpdf.kernel.colors.ColorConstants.BLACK;
         } else if (awtc == Color.BLUE) {
-            ret = com.itextpdf.kernel.color.Color.BLUE;
+            ret = com.itextpdf.kernel.colors.ColorConstants.BLUE;
         } else if (awtc == Color.CYAN) {
-            ret = com.itextpdf.kernel.color.Color.CYAN;
+            ret = com.itextpdf.kernel.colors.ColorConstants.CYAN;
         }  else if (awtc == Color.DARK_GRAY) {
-            ret = com.itextpdf.kernel.color.Color.DARK_GRAY;
+            ret = com.itextpdf.kernel.colors.ColorConstants.DARK_GRAY;
         } else if (awtc == Color.GRAY) {
-            ret = com.itextpdf.kernel.color.Color.GRAY;
+            ret = com.itextpdf.kernel.colors.ColorConstants.GRAY;
         } else if (awtc == Color.GREEN) {
-            ret = com.itextpdf.kernel.color.Color.GREEN;
+            ret = com.itextpdf.kernel.colors.ColorConstants.GREEN;
         } else if (awtc == Color.LIGHT_GRAY) {
-            ret = com.itextpdf.kernel.color.Color.LIGHT_GRAY;
+            ret = com.itextpdf.kernel.colors.ColorConstants.LIGHT_GRAY;
         } else if (awtc == Color.MAGENTA) {
-            ret = com.itextpdf.kernel.color.Color.MAGENTA;
+            ret = com.itextpdf.kernel.colors.ColorConstants.MAGENTA;
         } else if (awtc == Color.ORANGE) {
-            ret = com.itextpdf.kernel.color.Color.ORANGE;
+            ret = com.itextpdf.kernel.colors.ColorConstants.ORANGE;
         } else if (awtc == Color.PINK) {
-            ret = com.itextpdf.kernel.color.Color.PINK;
+            ret = com.itextpdf.kernel.colors.ColorConstants.PINK;
         } else if (awtc == Color.RED) {
-            ret = com.itextpdf.kernel.color.Color.RED;
+            ret = com.itextpdf.kernel.colors.ColorConstants.RED;
         } else if (awtc == Color.WHITE) {
-            ret = com.itextpdf.kernel.color.Color.WHITE;
+            ret = com.itextpdf.kernel.colors.ColorConstants.WHITE;
         } else if (awtc == Color.YELLOW) {
-            ret = com.itextpdf.kernel.color.Color.YELLOW;
+            ret = com.itextpdf.kernel.colors.ColorConstants.YELLOW;
         } else if (awtc == Color.black) {
-            ret = com.itextpdf.kernel.color.Color.BLACK;
+            ret = com.itextpdf.kernel.colors.ColorConstants.BLACK;
         } else if (awtc == Color.blue) {
-            ret = com.itextpdf.kernel.color.Color.BLUE;
+            ret = com.itextpdf.kernel.colors.ColorConstants.BLUE;
         } else if (awtc == Color.cyan) {
-            ret = com.itextpdf.kernel.color.Color.CYAN;
+            ret = com.itextpdf.kernel.colors.ColorConstants.CYAN;
         } else if (awtc == Color.darkGray) {
-            ret = com.itextpdf.kernel.color.Color.DARK_GRAY;
+            ret = com.itextpdf.kernel.colors.ColorConstants.DARK_GRAY;
         } else if (awtc == Color.gray) {
-            ret = com.itextpdf.kernel.color.Color.GRAY;
+            ret = com.itextpdf.kernel.colors.ColorConstants.GRAY;
         } else if (awtc == Color.green) {
-            ret = com.itextpdf.kernel.color.Color.GREEN;
+            ret = com.itextpdf.kernel.colors.ColorConstants.GREEN;
         } else if (awtc == Color.lightGray) {
-            ret = com.itextpdf.kernel.color.Color.LIGHT_GRAY;
+            ret = com.itextpdf.kernel.colors.ColorConstants.LIGHT_GRAY;
         } else if (awtc == Color.magenta) {
-            ret = com.itextpdf.kernel.color.Color.MAGENTA;
+            ret = com.itextpdf.kernel.colors.ColorConstants.MAGENTA;
         } else if (awtc == Color.orange) {
-            ret = com.itextpdf.kernel.color.Color.ORANGE;
+            ret = com.itextpdf.kernel.colors.ColorConstants.ORANGE;
         } else if (awtc == Color.pink) {
-            ret = com.itextpdf.kernel.color.Color.PINK;
+            ret = com.itextpdf.kernel.colors.ColorConstants.PINK;
         } else if (awtc == Color.red) {
-            ret = com.itextpdf.kernel.color.Color.RED;
+            ret = com.itextpdf.kernel.colors.ColorConstants.RED;
         } else if (awtc == Color.white) {
-            ret = com.itextpdf.kernel.color.Color.WHITE;
+            ret = com.itextpdf.kernel.colors.ColorConstants.WHITE;
         } else if (awtc == Color.yellow) {
-            ret = com.itextpdf.kernel.color.Color.YELLOW;
+            ret = com.itextpdf.kernel.colors.ColorConstants.YELLOW;
         }
         return ret;
     }
