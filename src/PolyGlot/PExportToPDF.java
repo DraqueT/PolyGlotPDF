@@ -147,7 +147,13 @@ public class PExportToPDF {
             // If confont not specified, assume that the conlang requires unicode characters
             conFont = unicodeFont;
         } else {
-            conFont = PdfFontFactory.createFont(conFontFile, PdfEncodings.IDENTITY_H, true);
+            // iText has an exception class ALSO named IOException. That tricks the IDE. WHY YOU NAME SO BADLY.
+            try {
+                conFont = PdfFontFactory.createFont(conFontFile, PdfEncodings.IDENTITY_H, true);
+            } catch (Exception e) {
+                throw new IOException("ERROR - Font \"" + core.getPropertiesManager().getFontCon().getName() 
+                        + "\" incompatible with PDF printing library.");
+            }
         }
 
         conFontSize = (float)core.getPropertiesManager().getFontSize();

@@ -353,15 +353,15 @@ public class ScrPrintToPDF extends JDialog {
         
         try {
             core.readFile(txtPgtFile.getText());
-        } catch (IOException | IllegalStateException | FontFormatException ex) {
-            System.out.println("ME DO PRINT BAD.");
+        } catch (IOException | IllegalStateException | FontFormatException e) {
+            System.out.println("ERROR: " + e.getLocalizedMessage());
             return;
         }
         
         try {
             export = new PExportToPDF(core, txtPgtFile.getText() + ".pdf");
         } catch (IOException e) {
-            System.out.println("Save Error: Unable to initialize export object: " + e.getMessage());
+            System.out.println(e.getMessage());
             return;
         }
         

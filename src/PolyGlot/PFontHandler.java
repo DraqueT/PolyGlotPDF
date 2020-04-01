@@ -61,7 +61,7 @@ public class PFontHandler {
         if (!isConFont) { // PDF Printing does not currntly support local fonts, and it is causing trouble
             return;
         }
-        
+
         if (isFileZipArchive(_path)) {
             try (ZipFile zipFile = new ZipFile(_path)) {
                 ZipEntry fontEntry = isConFont
@@ -73,36 +73,37 @@ public class PFontHandler {
 
                     tempFile.deleteOnExit();
 
-                    try (FileOutputStream out = new FileOutputStream(tempFile)) {
-                        try (InputStream inputStream = zipFile.getInputStream(fontEntry)) {
-                            byte[] buffer = new byte[inputStream.available()];
-                            inputStream.read(buffer);
-                            out.write(buffer);
+                    try (InputStream inputStream = zipFile.getInputStream(fontEntry)) {
+                        Font font = Font.createFont(Font.TRUETYPE_FONT, inputStream);
+
+                        if (font == null) {
+                            return;
                         }
 
-                        try {
-                            Font font = Font.createFont(Font.TRUETYPE_FONT, tempFile);
-
-                            if (font == null) {
-                                return;
-                            }
-
-                            font = wrapFont(font);
-
-                            byte[] cachedFont = IOHandler.getByteArrayFromFile(tempFile);
-
-                            if (isConFont) {
-                                core.getPropertiesManager().setFontConRaw(font);
-                                core.getPropertiesManager().setCachedFont(cachedFont);
-                            } else {
-                                core.getPropertiesManager().setLocalFont(font);
-                                core.getPropertiesManager().setCachedLocalFont(cachedFont);
-                            }
-                        } catch (FontFormatException e) {
-                            throw new FontFormatException("Could not load language font. Possible incompatible font: " + e.getMessage());
-                        } catch (IOException e) {
-                            throw new IOException("Could not load language font. I/O exception: " + e.getMessage());
+                        font = wrapFont(font);
+                        if (isConFont) {
+                            core.getPropertiesManager().setFontConRaw(font);
+                        } else {
+                            core.getPropertiesManager().setLocalFont(font);
                         }
+                    } catch (FontFormatException e) {
+                        throw new FontFormatException("Could not load language font: \""
+                                + core.getPropertiesManager().getFontCon().getFontName() + "\".");
+                    } catch (IOException e) {
+                        throw new IOException("Could not load language font. I/O exception: " + e.getMessage());
+                    }
+
+                    try (InputStream inputStream = zipFile.getInputStream(fontEntry)) {
+                        byte[] buffer = new byte[inputStream.available()];
+                        inputStream.read(buffer);
+
+                        if (isConFont) {
+                            core.getPropertiesManager().setCachedFont(buffer);
+                        } else {
+                            core.getPropertiesManager().setCachedLocalFont(buffer);
+                        }
+                    } catch (IOException e) {
+                        throw new IOException("Could not load language font. I/O exception: " + e.getMessage());
                     }
                 }
             }
@@ -344,8 +345,8 @@ public class PFontHandler {
     }
 
     /**
-     * Fetches and returns default button font
-     * Should only be called a single time (font then cached)
+     * Fetches and returns default button font Should only be called a single
+     * time (font then cached)
      *
      * @return Font to default buttons to
      * @throws java.io.IOException if unable to load font

@@ -111,13 +111,14 @@ public class ExportToExcelTest {
         };
         
         OutputInterceptor output = new OutputInterceptor(System.out);
-        OutputInterceptor error = new OutputInterceptor(System.err);
+//        OutputInterceptor error = new OutputInterceptor(System.err);
         System.setOut(output);
-        System.setErr(error);
+//        System.setErr(error);
         
         PolyGlot.main(args);
         
-        String resultErr = error.getIntercepted();
+        //String resultErr = error.getIntercepted();
+        String resultErr = output.getIntercepted();
         
         File resultFile = new File(targetFile);
         assert(resultErr.startsWith("ERROR: Wrong number of arguments given for command."));

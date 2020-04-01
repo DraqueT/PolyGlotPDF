@@ -22,8 +22,8 @@ package PolyGlot;
 import java.awt.FontFormatException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
+//import java.io.OutputStream;
+//import java.io.PrintStream;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 
@@ -63,11 +63,7 @@ public class PolyGlot {
                     consoleOut = "ERROR: Unrecognized command: " + args[0];
             }
 
-            if (consoleOut.equals(SUCCESS)) {
-                System.out.println(consoleOut);
-            } else {
-                System.err.println(consoleOut);
-            }
+            System.out.println(consoleOut);
         } else {
             System.err.println("PolyGlot Java8 Bridge cannot be called without a command. Commands:\n"
                     + PDFCOMMAND + "\n" + EXCELTOCVSCOMMAND + "\n" + EXPORTTOEXCELCOMMAND);
@@ -76,9 +72,6 @@ public class PolyGlot {
 
     private static String pdfExport(String[] args) {
         String ret;
-        PrintStream origErr = System.err;
-        
-        System.setErr(new OutputFilter(System.err, "WARNING"));// eliminate warnings from the output
 
         if (args.length == 16) {
             String readFrom = args[1];
@@ -119,8 +112,6 @@ public class PolyGlot {
             ret = "ERROR: Wrong number of arguments given for comand.\nUsage: " + PDFEXPORTUSAGE;
         }
 
-        // restore to original error stream 
-        System.setErr(origErr);
         return ret;
     }
 
@@ -197,26 +188,26 @@ public class PolyGlot {
         return ret;
     }
     
-    public static class OutputFilter extends PrintStream {
-        private final String filter;
-        private String intercepted = "";
-        
-
-        public OutputFilter(OutputStream out, String _filter) {
-            super(out, true);
-            filter = _filter;
-        }
-
-        @Override
-        public void print(String s) {
-            if (!filter.isEmpty() && !s.contains(filter)) {
-                super.print(s);
-                intercepted += s;
-            }
-        }
-
-        public String getIntercepted() {
-            return intercepted;
-        }
-    }
+//    public static class OutputFilter extends PrintStream {
+//        private final String filter;
+//        private String intercepted = "";
+//        
+//
+//        public OutputFilter(OutputStream out, String _filter) {
+//            super(out, true);
+//            filter = _filter;
+//        }
+//
+//        @Override
+//        public void print(String s) {
+//            if (!filter.isEmpty() && !s.contains(filter)) {
+//                super.print(s);
+//                intercepted += s;
+//            }
+//        }
+//
+//        public String getIntercepted() {
+//            return intercepted;
+//        }
+//    }
 }
