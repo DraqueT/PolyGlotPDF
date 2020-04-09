@@ -93,8 +93,8 @@ public class PolyGlot {
                     pdf.setPrintOrtho(args[12].toUpperCase().equals(PGTUtil.True));
                     pdf.setPrintPageNumber(args[13].toUpperCase().equals(PGTUtil.True));
                     pdf.setPrintWordEtymologies(args[14].toUpperCase().equals(PGTUtil.True));
-                    pdf.setPrintVersion(args[15]);
-                    pdf.setConFontLocation(args[16]);
+                    pdf.setConFontLocation(args[15]);
+                    pdf.setPrintVersion(args[16]);
 
                     pdf.print();
 

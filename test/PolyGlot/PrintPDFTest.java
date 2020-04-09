@@ -59,8 +59,8 @@ public class PrintPDFTest {
             "true",
             "TRUE",
             "True",
-            "X.XX",
-            "test/TestResources/Kukun.ttf"
+            "test/TestResources/Kukun.ttf",
+            "X.XX"
         };
         
         PolyGlot.main(args);
@@ -93,8 +93,8 @@ public class PrintPDFTest {
             "TRUE",
             "True",
             "BLOO",
-            "X.XX",
-            "test/TestResources/Kukun.ttf"
+            "test/TestResources/Kukun.ttf",
+            "X.XX"
         };
         
         PolyGlot.main(args);
@@ -153,8 +153,8 @@ public class PrintPDFTest {
             "true",
             "TRUE",
             "True",
-            "X.XX",
-            "test/TestResources/Kukun.ttf"
+            "test/TestResources/Kukun.ttf",
+            "X.XX"
         };
         
         PolyGlot.main(args);
