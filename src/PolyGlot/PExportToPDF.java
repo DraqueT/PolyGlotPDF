@@ -66,7 +66,10 @@ import com.itextpdf.layout.property.TextAlignment;
 import com.itextpdf.layout.property.UnitValue;
 import com.itextpdf.layout.property.VerticalAlignment;
 import com.itextpdf.layout.renderer.DocumentRenderer;
+import java.awt.Font;
+import java.awt.FontFormatException;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -102,10 +105,9 @@ public class PExportToPDF {
     private final DictCore core;
     private final String targetFile;
     private Document document;
-    private final byte[] conFontFile;
     private final byte[] unicodeFontFile;
     private final byte[] unicodeFontItalicFile;
-    private final PdfFont conFont;
+    private PdfFont conFont;
     private final PdfFont unicodeFont;
     private final PdfFont unicodeFontItalic;
     private final float conFontSize;
@@ -123,6 +125,7 @@ public class PExportToPDF {
     private String subTitleText = "";
     private String log = "";
     private String printVersion = "";
+    private String conFontLocation = "";
 
     /**
      * Exports language to presentable PDF
@@ -134,29 +137,13 @@ public class PExportToPDF {
     public PExportToPDF(DictCore _core, String _targetFile) throws IOException {
         core = _core;
         targetFile = _targetFile;
-        conFontFile = core.getPropertiesManager().getCachedFont();
         unicodeFontFile = new IOHandler().getUnicodeFontByteArray();
         unicodeFontItalicFile = new IOHandler().getUnicodeFontItalicByteArray();
         unicodeFont = PdfFontFactory.createFont(unicodeFontFile, PdfEncodings.IDENTITY_H, true);
         unicodeFont.setSubset(true);
         unicodeFontItalic = PdfFontFactory.createFont(unicodeFontItalicFile, PdfEncodings.IDENTITY_H, true);
         unicodeFontItalic.setSubset(true);
-
-        // If font file still null, no custom font was loaded.
-        if (conFontFile == null) {
-            // If confont not specified, assume that the conlang requires unicode characters
-            conFont = unicodeFont;
-        } else {
-            // iText has an exception class ALSO named IOException. That tricks the IDE. WHY YOU NAME SO BADLY.
-            try {
-                conFont = PdfFontFactory.createFont(conFontFile, PdfEncodings.IDENTITY_H, true);
-            } catch (Exception e) {
-                throw new IOException("ERROR - Font \"" + core.getPropertiesManager().getFontCon().getName() 
-                        + "\" incompatible with PDF printing library.");
-            }
-        }
-
-        conFontSize = (float)core.getPropertiesManager().getFontSize();
+        conFontSize = (float) core.getPropertiesManager().getFontSize();
         glossKey = getGlossKey();
     }
 
@@ -172,6 +159,27 @@ public class PExportToPDF {
         document.setRenderer(defRender);
         ColumnDocumentRenderer dictRender = getColumnRender();
         PdfCanvas canvas = null;
+        
+        // If font file still null, no custom font was loaded.
+        if (conFontLocation.isEmpty()) {
+            // If confont not specified, assume that the conlang requires unicode characters
+            conFont = unicodeFont;
+        } else {
+            // iText has an exception class ALSO named IOException. That tricks the IDE. WHY YOU NAME SO BADLY.
+            try {
+                conFont = PdfFontFactory.createFont(conFontLocation, PdfEncodings.IDENTITY_H, true);
+            } catch (Exception e) {
+                try {
+                    Font errorFont = Font.createFont(Font.TRUETYPE_FONT, new File(conFontLocation));
+                    throw new IOException("ERROR - Font \"" + errorFont.getName()
+                            + "\" incompatible with PDF printing library.");
+                } catch (FontFormatException ex) {
+                    throw new IOException("ERROR - Font \"" + conFontLocation
+                            + "\" incompatible with PDF printing library.");
+                }
+
+            }
+        }
 
         // set up page numbers on document
         if (printPageNumber) {
@@ -334,8 +342,9 @@ public class PExportToPDF {
     }
 
     /**
-     * Gets map of types to their glosses (just type name if no gloss) and returns it. This prevents the necessity of
-     * looking up each gloss name for every instance on a word.
+     * Gets map of types to their glosses (just type name if no gloss) and
+     * returns it. This prevents the necessity of looking up each gloss name for
+     * every instance on a word.
      *
      * @return
      */
@@ -470,7 +479,7 @@ public class PExportToPDF {
                     if (varChunk != null) {
                         dictEntry.add(new Text(", "));
                     }
-                    
+
                     WordClass prop = (WordClass) core.getWordPropertiesCollection().getNodeById(curEntry.getKey());
                     varChunk = new Text(prop.getValue());
                     varChunk.setFont(unicodeFontItalic);
@@ -526,7 +535,7 @@ public class PExportToPDF {
                             dictEntryWord.add(dictEntry);
                             dictEntry = new Paragraph();
                         }
-                        
+
                         dictEntryWord.add(getImageContainer(getScaledImage((BufferedImage) o, true)));
                     } else {
                         // Do nothing: May be expanded for further logic later
@@ -681,7 +690,7 @@ public class PExportToPDF {
                     if (varChunk != null) {
                         dictEntry.add(new Text(", "));
                     }
-                    
+
                     WordClass prop = (WordClass) core.getWordPropertiesCollection().getNodeById(curEntry.getKey());
                     varChunk = new Text(prop.getValue());
                     varChunk.setFont(unicodeFontItalic);
@@ -735,7 +744,7 @@ public class PExportToPDF {
                             dictEntryWord.add(dictEntry);
                             dictEntry = new Paragraph();
                         }
-                        
+
                         dictEntryWord.add(getImageContainer(getScaledImage((BufferedImage) o, true)));
                     } else {
                         // Do nothing: May be expanded for further logic later
@@ -804,7 +813,7 @@ public class PExportToPDF {
 
     private void printConjugationsToEntry(Paragraph dictEntry, ConWord curWord) {
         Text varChunk;
-        
+
         if (printAllConjugations) {
             for (DeclensionPair curPair : core.getDeclensionManager().getAllCombinedIds(curWord.getWordTypeId())) {
                 DeclensionNode curDeclension
@@ -933,7 +942,7 @@ public class PExportToPDF {
         table.addCell(new Paragraph("Gloss").setFont(PdfFontFactory.createFont(FontConstants.COURIER_BOLD)));
 
         core.getTypes().getNodes().forEach((curType) -> {
-        //for (TypeNode curType : core.getTypes().getNodes()) {
+            //for (TypeNode curType : core.getTypes().getNodes()) {
             table.addCell(curType.getValue());
             table.addCell(curType.getGloss());
         });
@@ -1093,7 +1102,11 @@ public class PExportToPDF {
     public void setPrintVersion(String _printVersion) {
         printVersion = _printVersion;
     }
-    
+
+    public void setConFontLocation(String _conFontLocation) {
+        conFontLocation = _conFontLocation;
+    }
+
     /**
      * This is code that allows for easily adding page numbers.
      */
@@ -1159,9 +1172,10 @@ public class PExportToPDF {
     }
 
     /**
-     * Takes a buffered image and returns an Image scaled to the appropriate size. Scaled for full screen if columSize
-     * is set to false, and to fit into a column if set to true. If an image is already small enough, its size will not
-     * be scaled at all
+     * Takes a buffered image and returns an Image scaled to the appropriate
+     * size. Scaled for full screen if columSize is set to false, and to fit
+     * into a column if set to true. If an image is already small enough, its
+     * size will not be scaled at all
      *
      * @param inputImage
      * @param columnSize
@@ -1188,7 +1202,7 @@ public class PExportToPDF {
 
         return ret;
     }
-    
+
     private Table getImageContainer(Image image) {
         Table ret = new Table(1);
         Cell cell = new Cell();

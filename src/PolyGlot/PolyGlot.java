@@ -22,8 +22,6 @@ package PolyGlot;
 import java.awt.FontFormatException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-//import java.io.OutputStream;
-//import java.io.PrintStream;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 
@@ -73,7 +71,7 @@ public class PolyGlot {
     private static String pdfExport(String[] args) {
         String ret;
 
-        if (args.length == 16) {
+        if (args.length == 17) {
             String readFrom = args[1];
             String writeTo = args[2];
             
@@ -96,6 +94,7 @@ public class PolyGlot {
                     pdf.setPrintPageNumber(args[13].toUpperCase().equals(PGTUtil.True));
                     pdf.setPrintWordEtymologies(args[14].toUpperCase().equals(PGTUtil.True));
                     pdf.setPrintVersion(args[15]);
+                    pdf.setConFontLocation(args[16]);
 
                     pdf.print();
 

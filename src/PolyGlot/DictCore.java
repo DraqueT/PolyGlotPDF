@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2019, Draque Thompson, draquemail@gmail.com
+ * Copyright (c) 2014-2020, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
  * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
@@ -287,7 +287,11 @@ public class DictCore {
             throw new IOException("Image loading error: " + e.getLocalizedMessage());
         }
 
-        PFontHandler.setFontFrom(_fileName, this);
+        try {
+            PFontHandler.setFontFrom(_fileName, this);
+        } catch (FontFormatException | IOException e) {
+            System.out.print("WARNING: Font load problem: " + e.getLocalizedMessage());
+        }
         
         try {
             CustHandler handler;
