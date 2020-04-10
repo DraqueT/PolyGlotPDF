@@ -44,6 +44,11 @@ public class PolyGlot {
     public static void main(final String[] args) {
         String consoleOut;
         
+        // trim args (Windows and Linux cannot pass blank string-must pass space)
+        for (int i = 0; i < args.length; i++) {
+            args[i] = args[i].trim();
+        }
+        
         if (args.length == 0) {
             Screens.ScrPrintToPDF.run();
         } else if (args.length > 0) {
@@ -67,7 +72,7 @@ public class PolyGlot {
                     + PDFCOMMAND + "\n" + EXCELTOCVSCOMMAND + "\n" + EXPORTTOEXCELCOMMAND);
         }
     }
-
+    
     private static String pdfExport(String[] args) {
         String ret;
 
