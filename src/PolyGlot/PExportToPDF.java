@@ -1188,7 +1188,7 @@ public class PExportToPDF {
         float imageWidth = inputImage.getWidth();
         float imageHeight = inputImage.getHeight();
 
-        if ((columnSize && imageWidth > (docWidth / 2)) || imageWidth > docWidth / 2) {
+        if ((columnSize && imageWidth > (docWidth / 2.2)) || imageWidth > docWidth / 2.2) {
             float scaler = ((docWidth - document.getLeftMargin()
                     - document.getRightMargin()) / imageWidth);
 

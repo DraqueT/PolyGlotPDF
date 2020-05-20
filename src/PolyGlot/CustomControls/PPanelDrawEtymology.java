@@ -369,7 +369,8 @@ public final class PPanelDrawEtymology extends JPanel {
         antiAlias.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
         try{paintEt(g);}catch(Exception e){
-            System.out.println("ERROR: Etymology Rendering Error");
+            // Print to screen for Java8Bridge to pick up
+            System.out.println("WARNING: Etymology Rendering Error");
         }
     }
 
