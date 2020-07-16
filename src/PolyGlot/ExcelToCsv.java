@@ -23,9 +23,12 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
@@ -57,7 +60,7 @@ public class ExcelToCsv {
     public static void readExcel(String excelFile, String targetFile, int sheetNum) throws IOException, FileNotFoundException, InvalidFormatException {
         String csvString = read(new File(excelFile), sheetNum);
         
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(targetFile))) {
+        try (OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(targetFile), StandardCharsets.UTF_8)) {
             writer.write(csvString);
         }
     }
