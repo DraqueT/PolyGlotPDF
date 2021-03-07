@@ -183,6 +183,7 @@ public class PolyGlot {
             } catch (InvalidFormatException e) {
                 ret = "ERROR: Unrecognized Excel format.";
             } catch (Exception e) {
+                e.printStackTrace();
                 ret = "Error: Unable to convert Excel file: " + e.getLocalizedMessage();
             }
         } else {

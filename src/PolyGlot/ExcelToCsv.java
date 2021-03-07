@@ -32,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -92,7 +93,28 @@ public class ExcelToCsv {
             String cellContents = "";
             
             if (cell != null) {
-                cellContents = cell.getStringCellValue();
+                if (null!=cell.getCellType()) switch (cell.getCellType()) {
+                    case STRING:
+                        cellContents = cell.getStringCellValue();
+                        break;
+                    case NUMERIC:
+                        cellContents = Double.toString(cell.getNumericCellValue());
+                        break;
+                    case BOOLEAN:
+                        cellContents = Boolean.toString(cell.getBooleanCellValue());
+                        break;
+                    case ERROR:
+                        cellContents = "<CELL FORMULA ERROR>";
+                        break;
+                    case BLANK:
+                    case _NONE:
+                        cellContents = "";
+                        break;
+                    default:
+                        cellContents = "";
+                        break;
+                }
+                
                 cellContents = cellContents.replace("\"", "\"\""); // double-quotes must be escaped as 2x double-quotes
                 cellContents = "\"" + cellContents + "\""; // cells encapsulated in double quotes to allow for multilines
             }

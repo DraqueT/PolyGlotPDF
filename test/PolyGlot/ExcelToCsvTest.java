@@ -35,6 +35,7 @@ public class ExcelToCsvTest {
  
     private final String targetFile = "test" + File.separator + "testFile.csv";
     private final String excelFile = "test" + File.separator + "TestResources" + File.separator + "excelImport.xlsx";
+    private final String excelFileWithNonStringVals = "test" + File.separator + "TestResources" + File.separator + "excelImportNonString.xlsx";
     private final String sheet1Expected;
     private final String sheet2Expected;
     
@@ -52,9 +53,37 @@ public class ExcelToCsvTest {
         
         sheet2Expected = "\"SHEET 2\"";
     }
+    
+    @Test
+    public void testImportNonStringValues() {
+        System.out.println("testImportNonStringValues");
+
+        String sheetNum = "0";
+        String[] args = {
+            "excel-to-cvs",
+            excelFileWithNonStringVals,
+            targetFile,
+            sheetNum
+        };
+
+        OutputInterceptor output = new OutputInterceptor(System.out);
+        OutputInterceptor errors = new OutputInterceptor(System.err);
+        System.setOut(output);
+        System.setErr(errors);
+
+        PolyGlot.main(args);
+
+        String resultOut = output.getIntercepted();
+        String resultErr = errors.getIntercepted();
+
+        assertEquals("", resultErr);
+        assertEquals("SUCCESS", resultOut);
+
+        new File (targetFile).delete();
+    }
 
     @Test
-    public void testReadExcelSheet1() throws Exception {
+    public void testReadExcelSheet1() {
         System.out.println("readExcel Sheet 1");
         
         String sheetNum = "0";
@@ -74,17 +103,22 @@ public class ExcelToCsvTest {
         
         String resultOut = output.getIntercepted();
         String resultErr = errors.getIntercepted();
-        String outputFile = readFile(targetFile);
         
-        assertEquals(resultErr, "");
-        assertEquals(resultOut, "SUCCESS");
-        assertEquals(sheet1Expected, outputFile);
+        try {
+            String outputFile = readFile(targetFile);
+
+            assertEquals(resultErr, "");
+            assertEquals(resultOut, "SUCCESS");
+            assertEquals(sheet1Expected, outputFile);
+        } catch (IOException e) {
+            fail(e.getLocalizedMessage());
+        }
         
         new File (targetFile).delete();
     }
     
     @Test
-    public void testReadExcelSheet2() throws Exception {
+    public void testReadExcelSheet2() {
         System.out.println("readExcel Sheet 1");
         String sheetNum = "1";
         String[] args = {
@@ -100,17 +134,21 @@ public class ExcelToCsvTest {
         
         PolyGlot.main(args);
         
-        String result = interceptor.getIntercepted();
-        String outputFile = readFile(targetFile);
-        
-        assertEquals(sheet2Expected, outputFile);
-        assertEquals(result, "SUCCESS");
+        try {
+            String result = interceptor.getIntercepted();
+            String outputFile = readFile(targetFile);
+
+            assertEquals(sheet2Expected, outputFile);
+            assertEquals(result, "SUCCESS");
+        } catch (IOException e) {
+            fail(e.getLocalizedMessage());
+        }
         
         new File (targetFile).delete();
     }
     
     @Test
-    public void testReadExcelSheetNonintegerInput() throws Exception {
+    public void testReadExcelSheetNonintegerInput() {
         System.out.println("readExcel Sheet 1");
         String sheetNum = "X";
         String[] args = {
@@ -126,18 +164,22 @@ public class ExcelToCsvTest {
         
         PolyGlot.main(args);
         
-        String result = interceptor.getIntercepted();
-        String outputFile = readFile(targetFile);
-        
-        assertEquals(null, outputFile);
-        assertEquals(result, "ERROR: Argument 3 must be an integer value.\n" +
-            "Usage: PolyGlot_J8_Bridge excel-to-cvs <EXCEL-FILE> <TARGET-WRITE> <SHEET-NUMBER>");
+        try {
+            String result = interceptor.getIntercepted();
+            String outputFile = readFile(targetFile);
+
+            assertEquals(null, outputFile);
+            assertEquals(result, "ERROR: Argument 3 must be an integer value.\n" +
+                "Usage: PolyGlot_J8_Bridge excel-to-cvs <EXCEL-FILE> <TARGET-WRITE> <SHEET-NUMBER>");
+        } catch (IOException e) {
+            fail(e.getLocalizedMessage());
+        }
         
         new File (targetFile).delete();
     }
     
     @Test
-    public void testReadExcelSheetTooManyArgs() throws Exception {
+    public void testReadExcelSheetTooManyArgs() {
         System.out.println("readExcel Sheet 1");
         String sheetNum = "X";
         String[] args = {
@@ -154,17 +196,21 @@ public class ExcelToCsvTest {
         
         PolyGlot.main(args);
         
-        String result = interceptor.getIntercepted();
-        String outputFile = readFile(targetFile);
-        
-        assertEquals(null, outputFile);
-        assertEquals(result, "ERROR: Wrong number of args for cvs conversion.\nUsage: PolyGlot_J8_Bridge excel-to-cvs <EXCEL-FILE> <TARGET-WRITE> <SHEET-NUMBER>");
+        try {
+            String result = interceptor.getIntercepted();
+            String outputFile = readFile(targetFile);
+
+            assertEquals(null, outputFile);
+            assertEquals(result, "ERROR: Wrong number of args for cvs conversion.\nUsage: PolyGlot_J8_Bridge excel-to-cvs <EXCEL-FILE> <TARGET-WRITE> <SHEET-NUMBER>");
+        } catch (IOException e) {
+            fail(e.getLocalizedMessage());
+        }
         
         new File (targetFile).delete();
     }
     
     @Test
-    public void testReadExcelSheetTooFewArgs() throws Exception {
+    public void testReadExcelSheetTooFewArgs() {
         System.out.println("readExcel Sheet 1");
         String[] args = {
             "excel-to-cvs",
@@ -178,10 +224,15 @@ public class ExcelToCsvTest {
         PolyGlot.main(args);
         
         String result = interceptor.getIntercepted();
-        String outputFile = readFile(targetFile);
         
-        assertEquals(null, outputFile);
-        assertEquals(result, "ERROR: Wrong number of args for cvs conversion.\nUsage: PolyGlot_J8_Bridge excel-to-cvs <EXCEL-FILE> <TARGET-WRITE> <SHEET-NUMBER>");
+        try {
+            String outputFile = readFile(targetFile);
+
+            assertEquals(null, outputFile);
+            assertEquals(result, "ERROR: Wrong number of args for cvs conversion.\nUsage: PolyGlot_J8_Bridge excel-to-cvs <EXCEL-FILE> <TARGET-WRITE> <SHEET-NUMBER>");
+        } catch (IOException e) {
+            fail(e.getLocalizedMessage());
+        }
         
         new File (targetFile).delete();
     }
