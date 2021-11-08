@@ -424,9 +424,9 @@ public class DictCore {
     }
     
     private void validateVersion() throws Exception {
-        if (!versionHierarchy.containsKey(this.getVersion())) {
-            throw new Exception("ERROR: CURRENT VERSION NOT ACCOUNTED FOR IN VERSION HISTORY.");
-        }
+//        if (!versionHierarchy.containsKey(this.getVersion())) {
+//            throw new Exception("ERROR: CURRENT VERSION NOT ACCOUNTED FOR IN VERSION HISTORY.");
+//        }
     }
     
     private void populateVersionHierarchy() {

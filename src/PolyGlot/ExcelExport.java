@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2019, Draque Thompson, draquemail@gmail.com
+ * Copyright (c) 2014-2021, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
  * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
@@ -32,7 +32,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -251,35 +250,38 @@ public class ExcelExport {
         }
 
         // record word classes on sheet
-        sheet = workbook.createSheet("Lexical Classes");
-        int propertyColumn = 0;
-        for (WordClass curProp
-                : core.getWordClassCollection().getAllWordClasses()) {
-            // get row, if not exist, create
-            row = sheet.getRow(0);
-            if (row == null) {
-                row = sheet.createRow(0);
-            }
-
-            Cell cell = row.createCell(propertyColumn);
-            cell.setCellValue(curProp.getValue());
-            cell.setCellStyle(boldHeader);
-
-            int rowIndex = 1;
-            for (WordClassValue curVal : curProp.getValues()) {
-                row = sheet.getRow(rowIndex);
+        WordClass[] classes = core.getWordClassCollection().getAllWordClasses();
+        
+        if (classes.length != 0) {
+            sheet = workbook.createSheet("Lexical Classes");
+            int propertyColumn = 0;
+            for (WordClass curProp : classes) {
+                // get row, if not exist, create
+                row = sheet.getRow(0);
                 if (row == null) {
-                    row = sheet.createRow(rowIndex);
+                    row = sheet.createRow(0);
                 }
 
-                cell = row.createCell(propertyColumn);
-                cell.setCellStyle(localStyle);
-                cell.setCellValue(curVal.getValue());
+                Cell cell = row.createCell(propertyColumn);
+                cell.setCellValue(curProp.getValue());
+                cell.setCellStyle(boldHeader);
 
-                rowIndex++;
+                int rowIndex = 1;
+                for (WordClassValue curVal : curProp.getValues()) {
+                    row = sheet.getRow(rowIndex);
+                    if (row == null) {
+                        row = sheet.createRow(rowIndex);
+                    }
+
+                    cell = row.createCell(propertyColumn);
+                    cell.setCellStyle(localStyle);
+                    cell.setCellValue(curVal.getValue());
+
+                    rowIndex++;
+                }
+
+                propertyColumn++;
             }
-
-            propertyColumn++;
         }
 
         // record pronunciations on sheet
@@ -318,30 +320,38 @@ public class ExcelExport {
             // create separate page for each part of speech
             
             for (TypeNode type : core.getTypes().getNodes()) {
-                sheet = workbook.createSheet(legalWorksheetName("Lex-" + type.getValue()));
                 ConWord filter = new ConWord();
                 filter.setWordTypeId(type.getId());
                 
-                Row row = sheet.createRow(0);
-                row.createCell(0).setCellValue(core.conLabel().toUpperCase() + " WORD");
-                row.createCell(1).setCellValue(core.localLabel().toUpperCase() + " WORD");
-                row.createCell(2).setCellValue("PoS");
-                row.createCell(3).setCellValue("PRONUNCIATION");
-                row.createCell(4).setCellValue("CLASS(ES)");
-                
-                // create column for each declension
-                ConjugationPair[] conjList = core.getConjugationManager().getAllCombinedIds(type.getId());
-                int colNum = 4;
-                for (ConjugationPair curDec : conjList) {
-                    colNum++;
-                    row.createCell(colNum).setCellValue(curDec.label.toUpperCase());
-                }
-                
-                row.createCell(colNum + 1).setCellValue("DEFINITION");
-                
                 try {
+                    ConWord[] list = core.getWordCollection().filteredList(filter);
+
+                    // don't make a sheet for types with no words
+                    if (list.length == 0) {
+                        continue;
+                    }
+
+                    sheet = workbook.createSheet(legalWorksheetName("Lex-" + type.getValue()));
+
+                    Row row = sheet.createRow(0);
+                    row.createCell(0).setCellValue(core.conLabel().toUpperCase() + " WORD");
+                    row.createCell(1).setCellValue(core.localLabel().toUpperCase() + " WORD");
+                    row.createCell(2).setCellValue("PoS");
+                    row.createCell(3).setCellValue("PRONUNCIATION");
+                    row.createCell(4).setCellValue("CLASS(ES)");
+
+                    // create column for each declension
+                    ConjugationPair[] conjList = core.getConjugationManager().getAllCombinedIds(type.getId());
+                    int colNum = 4;
+                    for (ConjugationPair curDec : conjList) {
+                        colNum++;
+                        row.createCell(colNum).setCellValue(curDec.label.toUpperCase());
+                    }
+
+                    row.createCell(colNum + 1).setCellValue("DEFINITION");
+                
                     int rowCount = 1;
-                    for (ConWord word : core.getWordCollection().filteredList(filter)) {
+                    for (ConWord word : list) {
                         row = sheet.createRow(rowCount);
                         
                         Object[] wordArray = getWordForm(word, conjList).toArray();
