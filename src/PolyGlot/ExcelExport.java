@@ -359,7 +359,7 @@ public class ExcelExport {
                             Cell cell = row.createCell(colCount);
                             cell.setCellValue((String)wordArray[colCount]);
 
-                            if (colCount == 0) {
+                            if (colCount == 0 || colCount > 4) {
                                 cell.setCellStyle(conStyle);
                             } else {
                                 cell.setCellStyle(localStyle);
