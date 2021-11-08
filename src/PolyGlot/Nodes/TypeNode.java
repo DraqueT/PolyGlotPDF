@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2014-2017, Draque Thompson, draquemail@gmail.com
+ * Copyright (c) 2014-2020, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
+ * Licensed under: MIT Licence
  * See LICENSE.TXT included with this code to read the full license agreement.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -19,6 +19,8 @@
  */
 package PolyGlot.Nodes;
 
+import java.util.Objects;
+import PolyGlot.DictCore;
 import PolyGlot.PGTUtil;
 import PolyGlot.WebInterface;
 import org.w3c.dom.Document;
@@ -28,17 +30,18 @@ import org.w3c.dom.Element;
  * This represents a part of speech. Apologies for the naming scheme. "Type" doesn't really fit.
  * @author draque
  */
-@SuppressWarnings("EqualsAndHashcode")
 public class TypeNode extends DictNode {
 
+    private DictCore core;
     private String notes = "";
     private String regexPattern = "";
     private String gloss = "";
     private boolean procMandatory = false;
     private boolean defMandatory = false;
 
-    public void setPattern(String _regexPattern) {
+    public void setPattern(String _regexPattern, DictCore _core) {
         regexPattern = _regexPattern;
+        core = _core;
     }
 
     public String getPattern() {
@@ -68,7 +71,12 @@ public class TypeNode extends DictNode {
         if (o != null) {
             ret = o instanceof TypeNode;
             if (ret) {
-                ret = ((TypeNode) o).getId().equals(this.id);
+                TypeNode comp = (TypeNode)o;
+                ret = comp.getId().equals(this.id);
+                ret = ret && comp.getGloss().equals(this.gloss);
+                ret = ret && comp.getNotes().equals(this.notes);
+                ret = ret && comp.getPattern().equals(this.regexPattern);
+                ret = ret && comp.getValue().equals(this.value);
             }
         }
 
@@ -76,18 +84,26 @@ public class TypeNode extends DictNode {
     }
 
     @Override
+    public int hashCode() {
+        int hash = 5;
+        hash = 79 * hash + Objects.hashCode(this.regexPattern);
+        hash = 79 * hash + Objects.hashCode(this.gloss);
+        return hash;
+    }
+
+    @Override
     public void setEqual(DictNode _node) throws ClassCastException {
         if (!(_node instanceof TypeNode)) {
             throw new ClassCastException("Object not of type TypeNode");
         }
-
+        
         TypeNode set = (TypeNode) _node;
 
         this.setId(set.getId());
         this.setValue(set.getValue());
-        this.setDefMandatory(set.isDefMandatory());
-        this.setProcMandatory(set.isProcMandatory());
-        this.setGloss(set.getGloss());
+        this.defMandatory = set.defMandatory;
+        this.procMandatory = set.procMandatory;
+        this.gloss = set.gloss;
     }
 
     /**
@@ -98,10 +114,10 @@ public class TypeNode extends DictNode {
     }
 
     /**
-     * @param procMandatory the procMandatory to set
+     * @param _procMandatory the procMandatory to set
      */
-    public void setProcMandatory(boolean procMandatory) {
-        this.procMandatory = procMandatory;
+    public void setProcMandatory(boolean _procMandatory) {
+        this.procMandatory = _procMandatory;
     }
 
     /**
@@ -112,42 +128,42 @@ public class TypeNode extends DictNode {
     }
 
     /**
-     * @param defMandatory the defMandatory to set
+     * @param _defMandatory the defMandatory to set
      */
-    public void setDefMandatory(boolean defMandatory) {
-        this.defMandatory = defMandatory;
+    public void setDefMandatory(boolean _defMandatory) {
+        this.defMandatory = _defMandatory;
     }
 
     public void writeXML(Document doc, Element rootElement) {
-        Element wordNode = doc.createElement(PGTUtil.typeXID);
+        Element wordNode = doc.createElement(PGTUtil.POS_XID);
         
-        Element wordValue = doc.createElement(PGTUtil.typeIdXID);
+        Element wordValue = doc.createElement(PGTUtil.POS_ID_XID);
         Integer wordId = this.getId();
         wordValue.appendChild(doc.createTextNode(wordId.toString()));
         wordNode.appendChild(wordValue);
 
-        wordValue = doc.createElement(PGTUtil.typeNameXID);
+        wordValue = doc.createElement(PGTUtil.POS_NAME_XID);
         wordValue.appendChild(doc.createTextNode(this.getValue()));
         wordNode.appendChild(wordValue);
 
-        wordValue = doc.createElement(PGTUtil.typeNotesXID);
-        wordValue.appendChild(doc.createTextNode(WebInterface.archiveHTML(this.getNotes())));
+        wordValue = doc.createElement(PGTUtil.POS_NOTES_XID);
+        wordValue.appendChild(doc.createTextNode(WebInterface.archiveHTML(this.notes, core)));
         wordNode.appendChild(wordValue);
 
-        wordValue = doc.createElement(PGTUtil.typeDefManXID);
-        wordValue.appendChild(doc.createTextNode(this.isDefMandatory() ? PGTUtil.True : PGTUtil.False));
+        wordValue = doc.createElement(PGTUtil.POS_DEF_MAN_XID);
+        wordValue.appendChild(doc.createTextNode(this.defMandatory ? PGTUtil.TRUE : PGTUtil.FALSE));
         wordNode.appendChild(wordValue);
 
-        wordValue = doc.createElement(PGTUtil.typeProcManXID);
-        wordValue.appendChild(doc.createTextNode(this.isProcMandatory() ? PGTUtil.True : PGTUtil.False));
+        wordValue = doc.createElement(PGTUtil.POS_PROC_MAN_XID);
+        wordValue.appendChild(doc.createTextNode(this.procMandatory ? PGTUtil.TRUE : PGTUtil.FALSE));
         wordNode.appendChild(wordValue);
 
-        wordValue = doc.createElement(PGTUtil.typePatternXID);
-        wordValue.appendChild(doc.createTextNode(this.getPattern()));
+        wordValue = doc.createElement(PGTUtil.POS_PATTERN_XID);
+        wordValue.appendChild(doc.createTextNode(this.regexPattern));
         wordNode.appendChild(wordValue);
 
-        wordValue = doc.createElement(PGTUtil.typeGlossXID);
-        wordValue.appendChild(doc.createTextNode(this.getGloss()));
+        wordValue = doc.createElement(PGTUtil.POS_GLOSS_XID);
+        wordValue.appendChild(doc.createTextNode(this.gloss));
         wordNode.appendChild(wordValue);
         
         rootElement.appendChild(wordNode);

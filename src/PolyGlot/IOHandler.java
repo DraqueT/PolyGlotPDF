@@ -19,21 +19,15 @@
  */
 package PolyGlot;
 
-import PolyGlot.Nodes.LogoNode;
-import PolyGlot.ManagersCollections.LogoCollection;
 import PolyGlot.ManagersCollections.ImageCollection;
-import PolyGlot.ManagersCollections.OptionsManager;
 import PolyGlot.ManagersCollections.ReversionManager;
 import PolyGlot.Nodes.ImageNode;
 import java.awt.Component;
 import java.awt.Desktop;
-import java.awt.Dimension;
-import java.awt.Point;
+import java.awt.Image;
 import java.awt.Window;
 import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -41,11 +35,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -54,10 +45,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Enumeration;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map.Entry;
-import java.util.Scanner;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import javax.imageio.ImageIO;
@@ -84,6 +72,18 @@ public class IOHandler {
      */
     public static BufferedImage getImage(String filePath) throws IOException {
         return ImageIO.read(new File(filePath));
+    }
+    
+    public static File createTmpFileFromImageBytes(byte[] imageBytes, String fileName) throws IOException {
+        File tmpFile = File.createTempFile(fileName, ".png");
+        ByteArrayInputStream stream = new ByteArrayInputStream(imageBytes);
+        BufferedImage img = ImageIO.read(stream);
+        ImageIO.write(
+                img, 
+                "PNG", 
+                new FileOutputStream(tmpFile)
+        );
+        return tmpFile;
     }
 
     /**
@@ -189,7 +189,7 @@ public class IOHandler {
 
         if (IOHandler.isFileZipArchive(_fileName)) {
             try (ZipFile zipFile = new ZipFile(_fileName)) {
-                ZipEntry xmlEntry = zipFile.getEntry(PGTUtil.dictFileName);
+                ZipEntry xmlEntry = zipFile.getEntry(PGTUtil.LANG_FILE_NAME);
                 try (InputStream ioStream = zipFile.getInputStream(xmlEntry)) {
                     ret = CustHandlerFactory.getCustHandler(ioStream, _core);
                 } catch (Exception e) {
@@ -264,12 +264,7 @@ public class IOHandler {
      * @throws java.net.URISyntaxException 
      */
     public static void deleteIni(DictCore core) throws URISyntaxException {
-        File f = new File(core.getWorkingDirectory() + PGTUtil.polyGlotIni);        
-        if (!f.exists()) {
-            return;
-        }
-        
-        f.delete();
+        // DUMMY
     }
 
     /**
@@ -280,94 +275,7 @@ public class IOHandler {
      * @throws IOException on failure to open existing file
      */
     public static void loadOptionsIni(DictCore core) throws Exception {
-        OptionsManager opMan = core.getOptionsManager();
-        File f = new File(core.getWorkingDirectory() + PGTUtil.polyGlotIni);
-        if (!f.exists() || f.isDirectory()) {
-            return;
-        }
-
-        try (BufferedReader br = new BufferedReader(new FileReader(
-                core.getWorkingDirectory() + PGTUtil.polyGlotIni))) {
-            String loadProblems = "";
-            
-            for (String line; (line = br.readLine()) != null;) {
-                String[] bothVal = line.split("=");
-
-                // if no value set, move on
-                if (bothVal.length == 1) {
-                    continue;
-                }
-
-                // if multiple values, something has gone wrong
-                if (bothVal.length != 2) {
-                    throw new Exception("PolyGlot.ini corrupt or unreadable.");
-                }
-
-                switch (bothVal[0]) {
-                    case PGTUtil.optionsLastFiles:
-                        opMan.getLastFiles().addAll(Arrays.asList(bothVal[1].split(",")));
-                        break;
-                    case PGTUtil.optionsScreensOpen:
-                        for (String screen : bothVal[1].split(",")) {
-                            opMan.addScreenUp(screen);
-                        }
-                        break;
-                    case PGTUtil.optionsScreenPos:
-                        for (String curPosSet : bothVal[1].split(",")) {
-                            if (curPosSet.isEmpty()) {
-                                continue;
-                            }
-
-                            String[] splitSet = curPosSet.split(":");
-
-                            if (splitSet.length != 3) {
-                                loadProblems += "Malformed Screen Position: " + curPosSet + "\n";
-                            }
-                            Point p = new Point(Integer.parseInt(splitSet[1]), Integer.parseInt(splitSet[2]));
-                            opMan.setScreenPosition(splitSet[0], p);
-                        }
-                        break;
-                    case PGTUtil.optionsScreensSize:
-                        for (String curSizeSet : bothVal[1].split(",")) {
-                            if (curSizeSet.isEmpty()) {
-                                continue;
-                            }
-
-                            String[] splitSet = curSizeSet.split(":");
-
-                            if (splitSet.length != 3) {
-                                loadProblems += "Malformed Screen Size: " + curSizeSet + "\n";
-                            }
-                            Dimension d = new Dimension(Integer.parseInt(splitSet[1]), Integer.parseInt(splitSet[2]));
-                            opMan.setScreenSize(splitSet[0], d);
-                        }
-                        break;
-                    case PGTUtil.optionsAutoResize:
-                        opMan.setAnimateWindows(bothVal[1].equals(PGTUtil.True));
-                        break;
-                    case PGTUtil.optionsMenuFontSize:
-                        opMan.setMenuFontSize(Double.parseDouble(bothVal[1]));
-                        break;
-                    case PGTUtil.optionsNightMode:
-                        opMan.setNightMode(bothVal[1].equals(PGTUtil.True));
-                        break;
-                    case PGTUtil.optionsReversionsCount:
-                        opMan.setMaxReversionCount(Integer.parseInt(bothVal[1]));
-                        break;
-                    case PGTUtil.optionsToDoDividerLocation:
-                        opMan.setToDoBarPosition(Integer.parseInt(bothVal[1]));
-                        break;
-                    case "\n":
-                        break;
-                    default:
-                        loadProblems += "Unrecognized value: " + bothVal[0] + " in PolyGlot.ini." + "\n";
-                }
-            }
-            
-            if (!loadProblems.isEmpty()) {
-                throw new Exception("Problems loading ini file: \n" + loadProblems);
-            }
-        }
+        // DUMMY
     }
 
     /**
@@ -382,7 +290,7 @@ public class IOHandler {
     public static void parseHandler(String _fileName, CustHandler _handler)
             throws IOException, ParserConfigurationException, SAXException {
         try (ZipFile zipFile = new ZipFile(_fileName)) {
-            ZipEntry xmlEntry = zipFile.getEntry(PGTUtil.dictFileName);
+            ZipEntry xmlEntry = zipFile.getEntry(PGTUtil.LANG_FILE_NAME);
             try (InputStream ioStream = zipFile.getInputStream(xmlEntry)) {
                 parseHandlerInternal(ioStream, _handler);
             }
@@ -467,7 +375,7 @@ public class IOHandler {
             ZipEntry entry;
             while (entries.hasMoreElements()) { // find images directory (zip paths are linear, only simulating tree structure)
                 entry = entries.nextElement();
-                if (!entry.getName().equals(PGTUtil.imagesSavePath)) {
+                if (!entry.getName().equals(PGTUtil.IMAGES_SAVE_PATH)) {
                     continue;
                 }
                 break;
@@ -483,17 +391,26 @@ public class IOHandler {
                 BufferedImage img;
                 try (InputStream imageStream = zipFile.getInputStream(entry)) {
                     String name = entry.getName().replace(".png", "")
-                            .replace(PGTUtil.imagesSavePath, "");
+                            .replace(PGTUtil.IMAGES_SAVE_PATH, "");
                     int imageId = Integer.parseInt(name);
                     img = ImageIO.read(imageStream);
-                    ImageNode imageNode = new ImageNode();
+                    ImageNode imageNode = new ImageNode(imageCollection.getCore());
                     imageNode.setId(imageId);
-                    imageNode.setImage(img);
+                    imageNode.setImageBytes(loadImageBytesFromImage(img));
                     imageCollection.getBuffer().setEqual(imageNode);
                     imageCollection.insert(imageId);
                 }
             }
         }
+    }
+    
+    public static byte[] loadImageBytesFromImage(Image img) throws IOException {
+        BufferedImage image = PGTUtil.toBufferedImage(img);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write( image, "png", baos );
+        baos.flush();
+        return baos.toByteArray();
     }
 
     /**
@@ -523,23 +440,23 @@ public class IOHandler {
      * @param fileName name/path of archive
      * @throws java.lang.Exception
      */
-    public static void loadLogographs(LogoCollection logoCollection,
-            String fileName) throws Exception {
-        Iterator<LogoNode> it = logoCollection.getAllLogos().iterator();
-        try (ZipFile zipFile = new ZipFile(fileName)) {
-            while (it.hasNext()) {
-                LogoNode curNode = it.next();
-                ZipEntry imgEntry = zipFile.getEntry(PGTUtil.logoGraphSavePath
-                        + curNode.getId().toString() + ".png");
-
-                BufferedImage img;
-                try (InputStream imageStream = zipFile.getInputStream(imgEntry)) {
-                    img = ImageIO.read(imageStream);
-                }
-                curNode.setLogoGraph(img);
-            }
-        }
-    }
+//    public static void loadLogographs(LogoCollection logoCollection,
+//            String fileName) throws Exception {
+//        Iterator<LogoNode> it = logoCollection.getAllLogos().iterator();
+//        try (ZipFile zipFile = new ZipFile(fileName)) {
+//            while (it.hasNext()) {
+//                LogoNode curNode = it.next();
+//                ZipEntry imgEntry = zipFile.getEntry(PGTUtil.logoGraphSavePath
+//                        + curNode.getId().toString() + ".png");
+//
+//                BufferedImage img;
+//                try (InputStream imageStream = zipFile.getInputStream(imgEntry)) {
+//                    img = ImageIO.read(imageStream);
+//                }
+//                curNode.setLogoGraph(img);
+//            }
+//        }
+//    }
     
     /**
      * Loads all reversion XML files from polyglot archive
@@ -551,26 +468,20 @@ public class IOHandler {
             String fileName) throws IOException {
         try (ZipFile zipFile = new ZipFile(fileName)) {
             Integer i = 0;
-            DictCore tmpCore;
             
-            ZipEntry reversion = zipFile.getEntry(PGTUtil.reversionSavePath
-                    + PGTUtil.reversionBaseFileName + i.toString());
+            ZipEntry reversion = zipFile.getEntry(PGTUtil.REVERSION_SAVE_PATH
+                    + PGTUtil.REVERSION_BASE_FILE_NAME + i.toString());
             
             while (reversion != null && i < reversionManager.getMaxReversionsCount()) {
-                tmpCore = new DictCore();
-                
-                reversionManager.addVersionToEnd(inputStreamToByteArray(zipFile.getInputStream(reversion)),
-                        tmpCore.getLastSaveTime());
+                reversionManager.addVersionToEnd(inputStreamToByteArray(zipFile.getInputStream(reversion)));
                 i++;
-                reversion = zipFile.getEntry(PGTUtil.reversionSavePath
-                        + PGTUtil.reversionBaseFileName + i.toString());
+                reversion = zipFile.getEntry(PGTUtil.REVERSION_SAVE_PATH
+                        + PGTUtil.REVERSION_BASE_FILE_NAME + i.toString());
             }
             
             // remember to load latest state in addition to all prior ones
-            reversion = zipFile.getEntry(PGTUtil.dictFileName);
-            tmpCore = new DictCore();
-            reversionManager.addVersionToEnd(inputStreamToByteArray(zipFile.getInputStream(reversion)),
-                        tmpCore.getLastSaveTime());
+            reversion = zipFile.getEntry(PGTUtil.LANG_FILE_NAME);
+            reversionManager.addVersionToEnd(inputStreamToByteArray(zipFile.getInputStream(reversion)));
         }
     }
 
@@ -592,7 +503,7 @@ public class IOHandler {
                 exportPath += ".ttf";
             }
 
-            ZipEntry fontEntry = zipFile.getEntry(PGTUtil.conFontFileName);
+            ZipEntry fontEntry = zipFile.getEntry(PGTUtil.CON_FONT_FILE_NAME);
 
             if (fontEntry != null) {
                 Path path = Paths.get(exportPath);
@@ -623,71 +534,7 @@ public class IOHandler {
      * @throws java.net.URISyntaxException
      */
     public static void saveOptionsIni(DictCore core) throws IOException, URISyntaxException {
-
-        try (Writer f0 = new BufferedWriter(new OutputStreamWriter(
-                new FileOutputStream(core.getWorkingDirectory()
-                        + PGTUtil.polyGlotIni), "UTF-8"))) {
-            OptionsManager opMan = core.getOptionsManager();
-            String newLine = System.getProperty("line.separator");
-            String nextLine;
-
-            if (!testCanWrite(core.getWorkingDirectory() + PGTUtil.polyGlotIni)) {
-                throw new IOException("Unable to save settings. Polyglot does not have permission to write to folder: "
-                        + core.getWorkingDirectory() 
-                        + ". This is most common when running from Program Files in Windows.");
-            }
-
-            nextLine = PGTUtil.optionsLastFiles + "=";
-            for (String file : opMan.getLastFiles()) {
-                // only write to ini if 1) the max file path length is not absurd/garbage, and 2) the file exists
-                if (file.length() < PGTUtil.maxFilePathLength && new File(file).exists()) {
-                    if (nextLine.endsWith("=")) {
-                        nextLine += file;
-                    } else {
-                        nextLine += ("," + file);
-                    }
-                }
-            }
-            f0.write(nextLine + newLine);
-
-            nextLine = PGTUtil.optionsScreenPos + "=";
-            for (Entry<String, Point> curPos : opMan.getScreenPositions().entrySet()) {
-                nextLine += ("," + curPos.getKey() + ":" + curPos.getValue().x + ":"
-                        + curPos.getValue().y);
-            }
-            f0.write(nextLine + newLine);
-
-            nextLine = PGTUtil.optionsScreensSize + "=";
-            for (Entry<String, Dimension> curSize : opMan.getScreenSizes().entrySet()) {
-                nextLine += ("," + curSize.getKey() + ":" + curSize.getValue().width + ":"
-                        + curSize.getValue().height);
-            }
-
-            f0.write(nextLine + newLine);
-            nextLine = PGTUtil.optionsScreensOpen + "=";
-
-            for (String screen : opMan.getLastScreensUp()) {
-                nextLine += ("," + screen);
-            }
-            f0.write(nextLine + newLine);
-
-            nextLine = PGTUtil.optionsAutoResize + "=" 
-                    + (opMan.isAnimateWindows() ? PGTUtil.True : PGTUtil.False);
-            f0.write(nextLine + newLine);
-
-            nextLine = PGTUtil.optionsMenuFontSize + "=" + Double.toString(opMan.getMenuFontSize());
-            f0.write(nextLine + newLine);
-            
-            nextLine = PGTUtil.optionsNightMode + "="
-                    + (opMan.isNightMode() ? PGTUtil.True : PGTUtil.False);
-            f0.write(nextLine + newLine);
-            
-            nextLine = PGTUtil.optionsReversionsCount + "=" + opMan.getMaxReversionCount();
-            f0.write(nextLine + newLine);
-            
-            nextLine = PGTUtil.optionsToDoDividerLocation + "=" + opMan.getToDoBarPosition();
-            f0.write(nextLine + newLine);
-        }
+        // DUMMY
     }
 
     /**
@@ -773,14 +620,7 @@ public class IOHandler {
     }
     
     public static String getErrorLog() throws FileNotFoundException {
-        String ret = "";
-        File errorLog = new File(PGTUtil.errorLogFile);
-        
-        if (errorLog.exists()) {
-            Scanner logScanner = new Scanner(errorLog).useDelimiter("\\Z");
-            ret = logScanner.hasNext() ? logScanner.next() : "";
-        }
-        return ret;
+        return "DUMMY";
     }
     
     /**
@@ -792,7 +632,7 @@ public class IOHandler {
      * @throws IOException if this throws, something is wrong internally
      */
     public byte[] getUnicodeFontByteArray() throws FileNotFoundException, IOException {
-        try (InputStream localStream = this.getClass().getResourceAsStream(PGTUtil.UnicodeFontLocation)) {
+        try (InputStream localStream = this.getClass().getResourceAsStream(PGTUtil.UNICODE_FONT_LOCATION)) {
             return inputStreamToByteArray(localStream);
         }
     }
@@ -806,7 +646,7 @@ public class IOHandler {
      * @throws IOException if this throws, something is wrong internally
      */
     public byte[] getUnicodeFontItalicByteArray() throws FileNotFoundException, IOException {
-        try (InputStream localStream = this.getClass().getResourceAsStream(PGTUtil.UnicodeFontItalicLocation)) {
+        try (InputStream localStream = this.getClass().getResourceAsStream(PGTUtil.UNICODE_FONT_ITALIC_LOCATION)) {
             return inputStreamToByteArray(localStream);
         }
     }

@@ -50,7 +50,7 @@ public class ExportToExcelTest {
         String[] args = {"export-to-excel",
             sourceFile,
             targetFile,
-            PGTUtil.True
+            PGTUtil.TRUE
         };
         
         OutputInterceptor output = new OutputInterceptor(System.out);
@@ -81,7 +81,7 @@ public class ExportToExcelTest {
         String[] args = {"export-to-excel",
             sourceFile + "BADFILE",
             targetFile,
-            PGTUtil.True
+            PGTUtil.TRUE
         };
         
         OutputInterceptor interceptor = new OutputInterceptor(System.out);
@@ -106,7 +106,7 @@ public class ExportToExcelTest {
         String[] args = {"export-to-excel",
             sourceFile,
             targetFile,
-            PGTUtil.True,
+            PGTUtil.TRUE,
             "ZOT"
         };
         

@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2015-2020, Draque Thompson
+ * Copyright (c) 2015-2021, Draque Thompson
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
- *  See LICENSE.TXT included with this code to read the full license agreement.
+ * Licensed under: MIT Licence
+ * See LICENSE.TXT included with this code to read the full license agreement.
 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -43,8 +43,10 @@ import javax.swing.text.StyleConstants;
  * @author draque
  */
 public class FormattedTextHelper {
-    private final static String FINDBODY = "<body>";
-    private final static String FINDBODYEND = "</body>";
+    private static final String FINDBODY = "<body>";
+    private static final String FINDBODYEND = "</body>";
+    private static final String FACE = "face";
+    private static final String SIZE = "size";
     private final static String BLACK = "black";
     private final static String RED = "red";
     private final static String GRAY = "gray";
@@ -52,226 +54,7 @@ public class FormattedTextHelper {
     private final static String YELLOW = "yellow";
     private final static String BLUE = "blue";
     private final static String COLOR = "color";
-    private final static String FACE = "face";
-    private final static String SIZE = "size";
 
-    /**
-     * Restores to the JTextPane the formatted text values encoded in the saved
-     * value string
-     * @param savedVal value to restore formatted text from
-     * @param pane Text pane to restore formatted text to.
-     * @param core Dictionary Core (needed for references)
-     * @throws javax.swing.text.BadLocationException if unable to load
-     * @throws java.io.IOException
-     */
-    public static void restoreFromString(String savedVal, JTextPane pane, DictCore core) throws BadLocationException, IOException {
-        String remaining = savedVal;
-        pane.setText("");
-        Color fontColor = Color.black;
-        String font = "";
-        int fontSize = -1;
-                
-        while (!remaining.isEmpty()) {
-            String nextNode = getNextNode(remaining);
-            Font conFont = core.getPropertiesManager().getFontCon();
-            
-            remaining = remaining.substring(nextNode.length(), remaining.length());
-            
-            if (nextNode.startsWith("<font")) {
-                
-                font = extractFamily(nextNode);
-                fontSize = extractSize(nextNode);
-                fontColor = extractColor(nextNode);
-                
-                if (font.equals(conFont.getFamily())) {
-                    font = PGTUtil.conLangFont;
-                }
-            } else if (nextNode.startsWith("</font")) {
-                // do nothing
-            } else if (nextNode.startsWith("<img src=")) {
-                String idString = nextNode.replace("<img src=\"", "").replace("\">", "");
-                Integer id = Integer.parseInt(idString);
-                ImageNode imageNode = (ImageNode)core.getImageCollection().getNodeById(id);
-                ((PGrammarPane)pane).addImage(imageNode);      
-            } else {
-                Document doc = pane.getDocument();
-                
-                MutableAttributeSet aset = new SimpleAttributeSet();
-                if (font.equals(PGTUtil.conLangFont)) {
-                    if (core.getPropertiesManager().isEnforceRTL()) {
-                        nextNode = PGTUtil.RTLMarker + nextNode;
-                    }
-                    StyleConstants.setFontFamily(aset, conFont.getFamily());
-                } else {
-                    if (core.getPropertiesManager().isEnforceRTL()) {
-                        nextNode = PGTUtil.LTRMarker + nextNode;
-                    }
-                    if (font.length() != 0) {
-                        StyleConstants.setFontFamily(aset, font);
-                    }
-                }
-                
-                if (fontSize != -1) {
-                    StyleConstants.setFontSize(aset, fontSize);
-                }
-                
-                StyleConstants.setForeground(aset, fontColor);
-                
-                if (nextNode.length() != 0){
-                    doc.insertString(doc.getLength(), nextNode, aset);
-                }
-            }
-        }
-    }
-    
-    /**
-     * Returns list of strings representing a chapter section. The paired boolean
-     * is set to true if the segment of text is in the conlang's font
-     * @param savedVal section of text to analyze and return
-     * @param core
-     * @return ordered list of text
-     */
-    public static List<Entry<String, PFontInfo>> getSectionTextFontSpecifec(String savedVal, DictCore core) {
-        String remaining = savedVal;
-        String font = "";
-        List<Entry<String, PFontInfo>> ret = new ArrayList<>();
-        PFontInfo conFont = new PFontInfo();
-                
-        while (!remaining.isEmpty()) {
-            String nextNode = getNextNode(remaining);
-            conFont.awtFont = core.getPropertiesManager().getFontCon();
-            
-            remaining = remaining.substring(nextNode.length(), remaining.length());
-            
-            if (nextNode.startsWith("<font")) {                
-                font = extractFamily(nextNode);
-                conFont.size = extractSize(nextNode);
-                conFont.awtColor = extractColor(nextNode);
-            } else if (nextNode.startsWith("</font")) {
-                // do nothing. All font changes are prefixed with<font
-            } else {
-                if (font.equals(conFont.awtFont.getFamily()) && core.getPropertiesManager().isEnforceRTL()) {
-                    nextNode = PGTUtil.RTLMarker + nextNode;
-                } else if (core.getPropertiesManager().isEnforceRTL()) {
-                    nextNode = PGTUtil.LTRMarker + nextNode;
-                }
-                
-                if (nextNode.length() != 0){
-                    conFont.awtFont = font.equals(core.getPropertiesManager().getFontCon().getFamily()) ? 
-                            core.getPropertiesManager().getFontCon() : new JLabel().getFont();
-                    Entry<String, PFontInfo> temp = new SecEntry<>(nextNode, conFont);
-                    ret.add(temp);
-                    conFont = new PFontInfo();
-                }
-            }
-        }
-        
-        return ret;
-    }
-    
-    public static com.itextpdf.kernel.colors.Color swtColorToItextColor(Color awtc) {
-        com.itextpdf.kernel.colors.Color ret = com.itextpdf.kernel.colors.ColorConstants.BLACK;
-        if (awtc == Color.BLACK) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.BLACK;
-        } else if (awtc == Color.BLUE) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.BLUE;
-        } else if (awtc == Color.CYAN) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.CYAN;
-        }  else if (awtc == Color.DARK_GRAY) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.DARK_GRAY;
-        } else if (awtc == Color.GRAY) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.GRAY;
-        } else if (awtc == Color.GREEN) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.GREEN;
-        } else if (awtc == Color.LIGHT_GRAY) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.LIGHT_GRAY;
-        } else if (awtc == Color.MAGENTA) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.MAGENTA;
-        } else if (awtc == Color.ORANGE) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.ORANGE;
-        } else if (awtc == Color.PINK) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.PINK;
-        } else if (awtc == Color.RED) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.RED;
-        } else if (awtc == Color.WHITE) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.WHITE;
-        } else if (awtc == Color.YELLOW) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.YELLOW;
-        } else if (awtc == Color.black) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.BLACK;
-        } else if (awtc == Color.blue) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.BLUE;
-        } else if (awtc == Color.cyan) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.CYAN;
-        } else if (awtc == Color.darkGray) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.DARK_GRAY;
-        } else if (awtc == Color.gray) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.GRAY;
-        } else if (awtc == Color.green) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.GREEN;
-        } else if (awtc == Color.lightGray) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.LIGHT_GRAY;
-        } else if (awtc == Color.magenta) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.MAGENTA;
-        } else if (awtc == Color.orange) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.ORANGE;
-        } else if (awtc == Color.pink) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.PINK;
-        } else if (awtc == Color.red) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.RED;
-        } else if (awtc == Color.white) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.WHITE;
-        } else if (awtc == Color.yellow) {
-            ret = com.itextpdf.kernel.colors.ColorConstants.YELLOW;
-        }
-        return ret;
-    }
-    
-    /**
-     * Given an HTML <font~> node, return the font family
-     * @param targetNode string value of HTML node
-     * @return string value of family name, blank if none
-     */
-    private static Color extractColor(String targetNode) {
-        Color ret = Color.black;
-        
-        int pos = targetNode.indexOf(COLOR) + 7;
-        
-        if (pos == -1) {
-            return ret;
-        }
-        
-        String strip = targetNode.substring(pos);
-        pos = strip.indexOf("\"");
-        strip = strip.substring(0, pos);
-        
-        switch (strip) {
-            case BLACK:
-                ret = Color.black;
-                break;
-            case RED:
-                ret = Color.red;
-                break;
-            case BLUE:
-                ret = Color.blue;
-                break;
-            case GRAY:
-                ret = Color.gray;
-                break;
-            case YELLOW:
-                ret = Color.yellow;
-                break;
-            case GREEN:
-                ret = Color.green;
-                break;
-            default:
-                ret = Color.black;
-                break;
-        }
-                
-        return ret;
-    }
-    
     /**
      * Given an HTML <font~> node, return the font family
      * @param targetNode string value of HTML node
@@ -338,16 +121,300 @@ public class FormattedTextHelper {
                 pos = posEnd;
             } else if (posEnd == -1) {
                 pos = posStart;
-            } else if (posStart < posEnd) {
-                pos = posStart;
             } else {
-                pos = posEnd;
+                pos = Math.min(posStart, posEnd);
             }
             
             ret = fromText.substring(0, pos);
         }
         
         return ret;
+    }
+    
+    /**
+     * Takes html with linebreaks in body and converts the linebreaks to proper
+     * <br> tags
+     * @param html input html to be sanitized
+     * @return linebreak sanitized html
+     */
+    public static String HTMLLineBreakParse(String html) {
+        String preFix = "";
+        String postFix = "";
+        String body = html;
+        
+        if (body.contains(FINDBODY)) {
+            int pos = body.indexOf(FINDBODY);
+            preFix = body.substring(0, pos + FINDBODY.length());
+            body = body.substring(pos + FINDBODY.length());
+        }
+        
+        if (body.contains(FINDBODYEND)) {
+            int pos = body.indexOf(FINDBODYEND);
+            postFix = body.substring(pos);
+            body = body.substring(0, pos);
+        }
+        
+        body = body.trim();
+        body = body.replace("<br>\n", "<br>"); // prevents doubling of <br> statements due to formatting
+        body = body.replace("\n", "<br>");
+        
+        return preFix + body + postFix;
+    }
+    
+    /**
+     * Returns text only body from html
+     * @param html full html to reduce
+     * @return only the body of the HTML, stripped of all tags
+     */
+    public static String getTextBody(String html) {
+        String ret = html;
+        
+        if (html.contains(FINDBODY) && html.contains(FINDBODYEND)) {
+            ret = html.substring(html.indexOf(FINDBODY) + FINDBODY.length(), html.indexOf(FINDBODYEND));
+        }
+        
+        return ret.replaceAll("<.*?>", "");
+    }
+    
+    public static class SecEntry<K, V> implements Entry<K, V> {
+        private final K key;
+        private V fontInfo;
+        public SecEntry(K _key, V _fontInfo) {
+            key = _key;
+            fontInfo = _fontInfo;
+        }        
+        @Override
+        public K getKey() {
+            return key;
+        }
+        @Override
+        public V getValue() {
+            return fontInfo;
+        }
+        
+        @Override
+        public V setValue(V value) {
+            V old = this.fontInfo;
+            this.fontInfo = value;
+            return old;
+        }
+    }
+    
+    /**
+     * Returns list of strings representing a chapter section. The paired boolean
+     * is set to true if the segment of text is in the conlang's font
+     * @param savedVal section of text to analyze and return
+     * @param core
+     * @return ordered list of text
+     */
+    public static List<Entry<String, PFontInfo>> getSectionTextFontSpecifec(String savedVal, DictCore core) {
+        String remaining = savedVal;
+        String font = "";
+        List<Entry<String, PFontInfo>> ret = new ArrayList<>();
+        PFontInfo conFont = new PFontInfo();
+                
+        while (!remaining.isEmpty()) {
+            String nextNode = getNextNode(remaining);
+            conFont.awtFont = core.getPropertiesManager().getFontCon();
+            
+            remaining = remaining.substring(nextNode.length(), remaining.length());
+            
+            if (nextNode.startsWith("<font")) {                
+                font = extractFamily(nextNode);
+                conFont.size = extractSize(nextNode);
+                conFont.awtColor = extractColor(nextNode);
+            } else if (nextNode.startsWith("</font")) {
+                // do nothing. All font changes are prefixed with<font
+            } else {
+                if (font.equals(conFont.awtFont.getFamily()) && core.getPropertiesManager().isEnforceRTL()) {
+                    nextNode = PGTUtil.RTL_CHARACTER + nextNode;
+                } else if (core.getPropertiesManager().isEnforceRTL()) {
+                    nextNode = PGTUtil.LTR_MARKER + nextNode;
+                }
+                
+                if (nextNode.length() != 0){
+                    conFont.awtFont = font.equals(core.getPropertiesManager().getFontCon().getFamily()) ? 
+                            core.getPropertiesManager().getFontCon() : new JLabel().getFont();
+                    Entry<String, PFontInfo> temp = new SecEntry<>(nextNode, conFont);
+                    ret.add(temp);
+                    conFont = new PFontInfo();
+                }
+            }
+        }
+        
+        return ret;
+    }
+    
+    /**
+     * Given an HTML <font~> node, return the font family
+     * @param targetNode string value of HTML node
+     * @return string value of family name, blank if none
+     */
+    private static Color extractColor(String targetNode) {
+        Color ret = Color.black;
+        
+        int pos = targetNode.indexOf(COLOR) + 7;
+        
+        if (pos == -1) {
+            return ret;
+        }
+        
+        String strip = targetNode.substring(pos);
+        pos = strip.indexOf("\"");
+        strip = strip.substring(0, pos);
+        
+        switch (strip) {
+            case BLACK:
+                ret = Color.black;
+                break;
+            case RED:
+                ret = Color.red;
+                break;
+            case BLUE:
+                ret = Color.blue;
+                break;
+            case GRAY:
+                ret = Color.gray;
+                break;
+            case YELLOW:
+                ret = Color.yellow;
+                break;
+            case GREEN:
+                ret = Color.green;
+                break;
+            default:
+                ret = Color.black;
+                break;
+        }
+                
+        return ret;
+    }
+    
+    public static com.itextpdf.kernel.colors.Color swtColorToItextColor(Color awtc) {
+        com.itextpdf.kernel.colors.Color ret = com.itextpdf.kernel.colors.ColorConstants.BLACK;
+        if (awtc == Color.BLACK) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.BLACK;
+        } else if (awtc == Color.BLUE) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.BLUE;
+        } else if (awtc == Color.CYAN) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.CYAN;
+        }  else if (awtc == Color.DARK_GRAY) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.DARK_GRAY;
+        } else if (awtc == Color.GRAY) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.GRAY;
+        } else if (awtc == Color.GREEN) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.GREEN;
+        } else if (awtc == Color.LIGHT_GRAY) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.LIGHT_GRAY;
+        } else if (awtc == Color.MAGENTA) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.MAGENTA;
+        } else if (awtc == Color.ORANGE) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.ORANGE;
+        } else if (awtc == Color.PINK) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.PINK;
+        } else if (awtc == Color.RED) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.RED;
+        } else if (awtc == Color.WHITE) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.WHITE;
+        } else if (awtc == Color.YELLOW) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.YELLOW;
+        } else if (awtc == Color.black) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.BLACK;
+        } else if (awtc == Color.blue) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.BLUE;
+        } else if (awtc == Color.cyan) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.CYAN;
+        } else if (awtc == Color.darkGray) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.DARK_GRAY;
+        } else if (awtc == Color.gray) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.GRAY;
+        } else if (awtc == Color.green) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.GREEN;
+        } else if (awtc == Color.lightGray) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.LIGHT_GRAY;
+        } else if (awtc == Color.magenta) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.MAGENTA;
+        } else if (awtc == Color.orange) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.ORANGE;
+        } else if (awtc == Color.pink) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.PINK;
+        } else if (awtc == Color.red) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.RED;
+        } else if (awtc == Color.white) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.WHITE;
+        } else if (awtc == Color.yellow) {
+            ret = com.itextpdf.kernel.colors.ColorConstants.YELLOW;
+        }
+        return ret;
+    }
+    
+    /**
+     * Restores to the JTextPane the formatted text values encoded in the saved
+     * value string
+     * @param savedVal value to restore formatted text from
+     * @param pane Text pane to restore formatted text to.
+     * @param core Dictionary Core (needed for references)
+     * @throws javax.swing.text.BadLocationException if unable to load
+     * @throws java.io.IOException
+     */
+    public static void restoreFromString(String savedVal, JTextPane pane, DictCore core) throws BadLocationException, IOException {
+        String remaining = savedVal;
+        pane.setText("");
+        Color fontColor = Color.black;
+        String font = "";
+        int fontSize = -1;
+                
+        while (!remaining.isEmpty()) {
+            String nextNode = getNextNode(remaining);
+            Font conFont = core.getPropertiesManager().getFontCon();
+            
+            remaining = remaining.substring(nextNode.length(), remaining.length());
+            
+            if (nextNode.startsWith("<font")) {
+                
+                font = extractFamily(nextNode);
+                fontSize = extractSize(nextNode);
+                fontColor = extractColor(nextNode);
+                
+                if (font.equals(conFont.getFamily())) {
+                    font = PGTUtil.CONLANG_FONT;
+                }
+            } else if (nextNode.startsWith("</font")) {
+                // do nothing
+            } else if (nextNode.startsWith("<img src=")) {
+                String idString = nextNode.replace("<img src=\"", "").replace("\">", "");
+                Integer id = Integer.parseInt(idString);
+                ImageNode imageNode = (ImageNode)core.getImageCollection().getNodeById(id);
+                ((PGrammarPane)pane).addImage(imageNode);      
+            } else {
+                Document doc = pane.getDocument();
+                
+                MutableAttributeSet aset = new SimpleAttributeSet();
+                if (font.equals(PGTUtil.CONLANG_FONT)) {
+                    if (core.getPropertiesManager().isEnforceRTL()) {
+                        nextNode = PGTUtil.RTL_CHARACTER + nextNode;
+                    }
+                    StyleConstants.setFontFamily(aset, conFont.getFamily());
+                } else {
+                    if (core.getPropertiesManager().isEnforceRTL()) {
+                        nextNode = PGTUtil.LTR_MARKER + nextNode;
+                    }
+                    if (font.length() != 0) {
+                        StyleConstants.setFontFamily(aset, font);
+                    }
+                }
+                
+                if (fontSize != -1) {
+                    StyleConstants.setFontSize(aset, fontSize);
+                }
+                
+                StyleConstants.setForeground(aset, fontColor);
+                
+                if (nextNode.length() != 0){
+                    doc.insertString(doc.getLength(), nextNode, aset);
+                }
+            }
+        }
     }
     
     /**
@@ -359,9 +426,9 @@ public class FormattedTextHelper {
      */
     public static String storageFormat(JTextPane pane) throws BadLocationException, Exception {
         String ret = storeFormatRecurse(pane.getDocument().getDefaultRootElement(), pane);
-        return ret.replace(PGTUtil.RTLMarker, "").replace(PGTUtil.LTRMarker, "");
+        return ret.replace(PGTUtil.RTL_CHARACTER, "").replace(PGTUtil.LTR_MARKER, "");
     }
-
+    
     /**
      * Recursing method implementing functionality of storageFormat()
      * @param e element to be cycled through
@@ -378,11 +445,11 @@ public class FormattedTextHelper {
             // hard coded values because they're hard coded in Java. Eh.
             if (e.getAttributes().getAttribute("$ename") != null
                     && e.getAttributes().getAttribute("$ename").equals("icon")) {
-                if (e.getAttributes().getAttribute(PGTUtil.ImageIdAttribute) == null) {
+                if (e.getAttributes().getAttribute(PGTUtil.IMAGE_ID_ATTRIBUTE) == null) {
                     throw new Exception("ID For image not stored. Unable to store section.");
                 }
                 
-                ret += "<img src=\"" + e.getAttributes().getAttribute(PGTUtil.ImageIdAttribute) + "\">";
+                ret += "<img src=\"" + e.getAttributes().getAttribute(PGTUtil.IMAGE_ID_ATTRIBUTE) + "\">";
             } else {
                 int start = e.getStartOffset();
                 int len = e.getEndOffset() - start;
@@ -406,7 +473,7 @@ public class FormattedTextHelper {
 
         return ret;
     }
-
+    
     /**
      * Gets standardized string value for color
      *
@@ -465,74 +532,7 @@ public class FormattedTextHelper {
         
         return ret;
     }
-    
-    
-    /**
-     * Takes html with linebreaks in body and converts the linebreaks to proper
-     * <br> tags
-     * @param html input html to be sanitized
-     * @return linebreak sanitized html
-     */
-    public static String HTMLLineBreakParse(String html) {
-        String preFix = "";
-        String postFix = "";
-        String body = html;
-        
-        if (body.contains(FINDBODY)) {
-            int pos = body.indexOf(FINDBODY);
-            preFix = body.substring(0, pos + FINDBODY.length());
-            body = body.substring(pos + FINDBODY.length());
-        }
-        
-        if (body.contains(FINDBODYEND)) {
-            int pos = body.indexOf(FINDBODYEND);
-            postFix = body.substring(pos);
-            body = body.substring(0, pos);
-        }
-        
-        body = body.trim();
-        body = body.replace("<br>\n", "<br>"); // prevents doubling of <br> statements due to formatting
-        body = body.replace("\n", "<br>");
-        
-        return preFix + body + postFix;
-    }
-    
-    /**
-     * Returns text only body from html
-     * @param html full html to reduce
-     * @return only the body of the HTML, stripped of all tags
-     */
-    public static String getTextBody(String html) {
-        String ret = html;
-        
-        if (html.contains(FINDBODY) && html.contains(FINDBODYEND)) {
-            ret = html.substring(html.indexOf(FINDBODY) + FINDBODY.length(), html.indexOf(FINDBODYEND));
-        }
-        
-        return ret.replaceAll("<.*?>", "");
-    }
-    
-    static class SecEntry<K, V> implements Entry<K, V> {
-        final K key;
-        V fontInfo;        
-        public SecEntry(K _key, V _fontInfo) {
-            key = _key;
-            fontInfo = _fontInfo;
-        }        
-        @Override
-        public K getKey() {
-            return key;
-        }
-        @Override
-        public V getValue() {
-            return fontInfo;
-        }
-        
-        @Override
-        public V setValue(V value) {
-            V old = this.fontInfo;
-            this.fontInfo = value;
-            return old;
-        }
+
+    protected FormattedTextHelper() {
     }
 }

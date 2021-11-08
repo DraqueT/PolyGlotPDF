@@ -19,11 +19,11 @@
  */
 package PolyGlot;
 
-import PolyGlot.ManagersCollections.DeclensionManager;
+import PolyGlot.ManagersCollections.ConjugationManager;
 import PolyGlot.Nodes.ConWord;
+import PolyGlot.Nodes.ConjugationNode;
+import PolyGlot.Nodes.ConjugationPair;
 import PolyGlot.Nodes.PronunciationNode;
-import PolyGlot.Nodes.DeclensionNode;
-import PolyGlot.Nodes.DeclensionPair;
 import PolyGlot.Nodes.TypeNode;
 import PolyGlot.Nodes.WordClassValue;
 import PolyGlot.Nodes.WordClass;
@@ -51,7 +51,7 @@ import org.apache.poi.ss.usermodel.Row;
 public class ExcelExport {
     
     private final DictCore core;
-    private final DeclensionManager decMan;
+    private final ConjugationManager conMan;
     HSSFWorkbook workbook = new HSSFWorkbook();
     HSSFSheet sheet;
     CellStyle localStyle = workbook.createCellStyle();
@@ -62,7 +62,7 @@ public class ExcelExport {
     
     private ExcelExport(DictCore _core) {
         core = _core;
-        decMan = core.getDeclensionManager();
+        conMan = core.getConjugationManager();
         
         conFont.setFontName(core.getPropertiesManager().getFontCon().getFontName());
         boldFont.setBold(true);
@@ -104,7 +104,7 @@ public class ExcelExport {
         return ret;
     }
 
-    private Object[] getWordFormOld(ConWord conWord, List<DeclensionPair> decList) {
+    private Object[] getWordFormOld(ConWord conWord, ConjugationPair[] conjList) {
         List<String> ret = new ArrayList<>();
         String declensionCell = "";
 
@@ -123,7 +123,7 @@ public class ExcelExport {
                 classes += ", ";
             }
             try {
-                WordClass prop = (WordClass) core.getWordPropertiesCollection().getNodeById(curEntry.getKey());
+                WordClass prop = (WordClass) core.getWordClassCollection().getNodeById(curEntry.getKey());
                 WordClassValue value = prop.getValueById(curEntry.getValue());
                 classes += value.getValue();
             } catch (Exception e) {
@@ -131,18 +131,16 @@ public class ExcelExport {
             }
         }
         ret.add(classes);
-
-        List<DeclensionNode> declensions = core.getDeclensionManager().getDimensionalDeclensionListWord(conWord.getId());
         
-        for (DeclensionPair declension : decList) {
+        for (ConjugationPair conjugation : conjList) {
             try {
-                DeclensionNode existingValue = decMan.getDeclensionByCombinedId(conWord.getId(), declension.combinedId);
+                ConjugationNode existingValue = conMan.getConjugationByCombinedId(conWord.getId(), conjugation.combinedId);
                 
-                if (existingValue != null && conWord.isOverrideAutoDeclen()) {
+                if (existingValue != null && conWord.isOverrideAutoConjugate()) {
                     declensionCell += existingValue.getValue() + ":";
                 }
                 else {
-                    declensionCell += decMan.declineWord(conWord, declension.combinedId, conWord.getValue()) + ":";
+                    declensionCell += conMan.declineWord(conWord, conjugation.combinedId) + ":";
                 }
             } catch (Exception e) {
                 declensionCell += "DECLENSION ERROR";
@@ -159,10 +157,10 @@ public class ExcelExport {
      * Returns list of all legal wordforms this word can take.
      * Accounts for overridden forms and properly filters forms marked as disabled
      * @param conWord
-     * @param decList
+     * @param conjList
      * @return 
      */
-    private List<String> getWordForm(ConWord conWord, List<DeclensionPair> decList) {
+    private List<String> getWordForm(ConWord conWord, ConjugationPair[] conjList) {
         List<String> ret = new ArrayList<>();
 
         ret.add(conWord.getValue());
@@ -180,7 +178,7 @@ public class ExcelExport {
                 classes += ", ";
             }
             try {
-                WordClass prop = (WordClass) core.getWordPropertiesCollection().getNodeById(curEntry.getKey());
+                WordClass prop = (WordClass) core.getWordClassCollection().getNodeById(curEntry.getKey());
                 WordClassValue value = prop.getValueById(curEntry.getValue());
                 classes += value.getValue();
             } catch (Exception e) {
@@ -194,7 +192,7 @@ public class ExcelExport {
             }
             
             try {
-                WordClass prop = (WordClass) core.getWordPropertiesCollection().getNodeById(curEntry.getKey());
+                WordClass prop = (WordClass) core.getWordClassCollection().getNodeById(curEntry.getKey());
                 classes += prop.getValue() + ":" + curEntry.getValue();
             } catch (Exception e) {
                 classes = "ERROR: UNABLE TO PULL CLASS";
@@ -203,20 +201,20 @@ public class ExcelExport {
         
         ret.add(classes);
 
-        decList.forEach((declension) -> {
+        for (ConjugationPair conjugation : conjList) {
             try {
-                DeclensionNode existingValue = decMan.getDeclensionByCombinedId(conWord.getId(), declension.combinedId);
+                ConjugationNode existingValue = conMan.getConjugationByCombinedId(conWord.getId(), conjugation.combinedId);
                 
-                if (existingValue != null && conWord.isOverrideAutoDeclen()) {
+                if (existingValue != null && conWord.isOverrideAutoConjugate()) {
                     ret.add(existingValue.getValue());
                 }
                 else {
-                    ret.add(decMan.declineWord(conWord, declension.combinedId, conWord.getValue()));
+                    ret.add(conMan.declineWord(conWord, conjugation.combinedId));
                 }
             } catch (Exception e) {
                 ret.add("DECLENSION ERROR");
             }
-        });
+        }
         
         ret.add(WebInterface.getTextFromHtml(conWord.getDefinition()));
 
@@ -235,14 +233,14 @@ public class ExcelExport {
         
         // record types on sheet
         sheet = workbook.createSheet("Parts of Speech");
-        Iterator<TypeNode> typeIt = core.getTypes().getNodes().iterator();
 
         Row row = sheet.createRow(0);
         row.createCell(0).setCellValue("PoS");
         row.createCell(1).setCellValue("NOTES");
 
-        for (Integer i = 1; typeIt.hasNext(); i++) {
-            TypeNode curNode = typeIt.next();
+        int i = 0;
+        for (TypeNode curNode : core.getTypes().getNodes()) {
+            i++;
             row = sheet.createRow(i);
 
             Cell cell = row.createCell(0);
@@ -256,7 +254,7 @@ public class ExcelExport {
         sheet = workbook.createSheet("Lexical Classes");
         int propertyColumn = 0;
         for (WordClass curProp
-                : core.getWordPropertiesCollection().getAllWordClasses()) {
+                : core.getWordClassCollection().getAllWordClasses()) {
             // get row, if not exist, create
             row = sheet.getRow(0);
             if (row == null) {
@@ -286,14 +284,14 @@ public class ExcelExport {
 
         // record pronunciations on sheet
         sheet = workbook.createSheet("Pronunciations");
-        Iterator<PronunciationNode> procIt = core.getPronunciationMgr().getPronunciations().iterator();
 
         row = sheet.createRow(0);
         row.createCell(0).setCellValue("CHARACTER(S)");
         row.createCell(1).setCellValue("PRONUNCIATION");
 
-        for (Integer i = 1; procIt.hasNext(); i++) {
-            PronunciationNode curNode = procIt.next();
+        i = 0;
+        for (PronunciationNode curNode : core.getPronunciationMgr().getPronunciations()) {
+            i++;
             row = sheet.createRow(i);
 
             Cell cell = row.createCell(0);
@@ -318,7 +316,8 @@ public class ExcelExport {
         // separate words by part of speech if requested so that each POS can have distinct declension columns
         if (separateDeclensions) {
             // create separate page for each part of speech
-            core.getTypes().getNodes().forEach((type) -> {
+            
+            for (TypeNode type : core.getTypes().getNodes()) {
                 sheet = workbook.createSheet(legalWorksheetName("Lex-" + type.getValue()));
                 ConWord filter = new ConWord();
                 filter.setWordTypeId(type.getId());
@@ -331,9 +330,9 @@ public class ExcelExport {
                 row.createCell(4).setCellValue("CLASS(ES)");
                 
                 // create column for each declension
-                List<DeclensionPair> decList = core.getDeclensionManager().getAllCombinedIds(type.getId());
+                ConjugationPair[] conjList = core.getConjugationManager().getAllCombinedIds(type.getId());
                 int colNum = 4;
-                for (DeclensionPair curDec : decList) {
+                for (ConjugationPair curDec : conjList) {
                     colNum++;
                     row.createCell(colNum).setCellValue(curDec.label.toUpperCase());
                 }
@@ -345,7 +344,7 @@ public class ExcelExport {
                     for (ConWord word : core.getWordCollection().filteredList(filter)) {
                         row = sheet.createRow(rowCount);
                         
-                        Object[] wordArray = getWordForm(word, decList).toArray();
+                        Object[] wordArray = getWordForm(word, conjList).toArray();
                         for (int colCount = 0; colCount < wordArray.length; colCount++) {
                             Cell cell = row.createCell(colCount);
                             cell.setCellValue((String)wordArray[colCount]);
@@ -361,7 +360,7 @@ public class ExcelExport {
                 } catch (Exception e) {
                     System.out.println( "Unable to export " + type.getValue() + " lexical values");
                 }
-            });
+            }
         } else {
             recordWordsOld();
         }
@@ -372,7 +371,7 @@ public class ExcelExport {
      */
     private void recordWordsOld () {
         sheet = workbook.createSheet("Lexicon");
-        Map<Integer, List<DeclensionPair>> typeDecMap = new HashMap<>();
+        Map<Integer, ConjugationPair[]> typeDecMap = new HashMap<>();
         
         Row row = sheet.createRow(0);
         row.createCell(0).setCellValue(core.conLabel().toUpperCase() + " WORD");
@@ -383,15 +382,18 @@ public class ExcelExport {
         row.createCell(5).setCellValue("DECLENSIONS");
         row.createCell(6).setCellValue("DEFINITIONS");
 
-        Iterator<ConWord> wordIt = core.getWordCollection().getWordNodes().iterator();
-        for (Integer i = 1; wordIt.hasNext(); i++) {
-            ConWord word = wordIt.next();
-            List<DeclensionPair> decList;
+        //Iterator<ConWord> wordIt = core.getWordCollection().getWordNodes().iterator();
+        //for (Integer i = 1; wordIt.hasNext(); i++) {
+        //    ConWord word = wordIt.next();
+        int i = 0;
+        for (ConWord word : core.getWordCollection().getWordNodes()) {
+            i++;
+            ConjugationPair[] decList;
             
             if (typeDecMap.containsKey(word.getWordTypeId())) {
                 decList = typeDecMap.get(word.getWordTypeId());
             } else {
-                decList = core.getDeclensionManager().getAllCombinedIds(word.getWordTypeId());
+                decList = core.getConjugationManager().getAllCombinedIds(word.getWordTypeId());
                 typeDecMap.put(word.getWordTypeId(), decList);
             }
             

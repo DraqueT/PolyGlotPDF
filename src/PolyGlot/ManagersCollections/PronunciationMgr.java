@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2014-2019, Draque Thompson, draquemail@gmail.com
+ * Copyright (c) 2014-2020, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
+ * Licensed under: MIT Licence
  * See LICENSE.TXT included with this code to read the full license agreement.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -23,10 +23,15 @@ import PolyGlot.DictCore;
 import PolyGlot.PGTUtil;
 import PolyGlot.Nodes.PronunciationNode;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import PolyGlot.IPAHandler;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -38,12 +43,11 @@ public class PronunciationMgr {
 
     private final DictCore core;
     protected boolean recurse = false;
-
+    private List<PronunciationNode> pronunciations = new ArrayList<>();
+    
     public PronunciationMgr(DictCore _core) {
         core = _core;
     }
-
-    private List<PronunciationNode> pronunciations = new ArrayList<>();
 
     /**
      * Sets list of pronunciations
@@ -59,28 +63,9 @@ public class PronunciationMgr {
      *
      * @return list of PronunciationNodes
      */
-    public List<PronunciationNode> getPronunciations() {
+    public PronunciationNode[] getPronunciations() {
         // CORRECT FOR FILTERING/CREATION OF COPY OBJECT
-        return pronunciations;
-    }
-
-    /**
-     * Returns index of pronunciation
-     *
-     * @param node to search for
-     * @return node's index, -1 = not found
-     */
-    public int getProcIndex(PronunciationNode node) {
-        int ret = -1;
-
-        for (int i = 0; i < pronunciations.size(); i++) {
-            if (node.equals(pronunciations.get(i))) {
-                ret = i;
-                break;
-            }
-        }
-
-        return ret;
+        return pronunciations.toArray(new PronunciationNode[0]);
     }
 
     /**
@@ -90,17 +75,6 @@ public class PronunciationMgr {
      * @param newNode node to be inserted
      */
     public void addAtPosition(int index, PronunciationNode newNode) {
-        pronunciations.add(index, newNode);
-    }
-
-    /**
-     * replaces the pronunciation node at given index
-     *
-     * @param index index to modify
-     * @param newNode new node
-     */
-    public void modifyProc(int index, PronunciationNode newNode) {
-        pronunciations.remove(index);
         pronunciations.add(index, newNode);
     }
 
@@ -171,11 +145,11 @@ public class PronunciationMgr {
         return ret.trim();
     }
     
-    public String getPronunciationInternal(String base) throws Exception {
+    private String getPronunciationInternal(String base) throws Exception {
         String ret = "";
 
-        // -base.length() fed as initial depth to ensure that longer words cannot be artificaially labeled as breaking max depth
-        List<PronunciationNode> procCycle = getPronunciationElements(base, -base.length());
+        // -base.length() fed as initial depth to ensure that longer words cannot be artificially labeled as breaking max depth
+        List<PronunciationNode> procCycle = getPronunciationElements(base, -base.length(), true);
         for (PronunciationNode curProc : procCycle) {
             ret += curProc.getPronunciation();
         }
@@ -191,58 +165,109 @@ public class PronunciationMgr {
      * found
      * @throws java.lang.Exception if malformed regex expression encountered
      */
-    public List<PronunciationNode> getPronunciationElements(String base) throws Exception {
-        // -base.length() fed as initial depth to ensure that longer words cannot be artificaially labeled as breaking max depth
-        return getPronunciationElements(base, -base.length());
+    public PronunciationNode[] getPronunciationElements(String base) throws Exception {
+        // -base.length() fed as initial depth to ensure that longer words cannot be artificially labeled as breaking max depth
+        return getPronunciationElements(base, -base.length(), true).toArray(new PronunciationNode[0]);
     }
     
     protected String getToolLabel() {
-        return "Pronuncation Manager";
+        return "Pronunciation Manager";
     }
 
     /**
      * returns pronunciation objects of a given word
      *
      * @param base word to find pronunciation objects of
-     * @param isFirst set to true if first iteration.
+     * @param depth current depth
+     * @param beginning true if beginning of word (cannot rely on depth)
      * @return pronunciation object list. If no perfect match found, empty
      * string returned
      */
-    private List<PronunciationNode> getPronunciationElements(String base, int depth) throws Exception {
-        List<PronunciationNode> ret = new ArrayList<>();
-        Iterator<PronunciationNode> finder = getPronunciations().iterator();
+    private List<PronunciationNode> getPronunciationElements(String base, int depth, boolean beginning) throws Exception {
+        List<PronunciationNode> ret;
+        Iterator<PronunciationNode> finder = pronunciations.iterator();
 
-        if (depth > PGTUtil.maxProcRecursion) {
+        if (depth > PGTUtil.MAX_PROC_RECURSE) {
             throw new Exception("Max recursions for " + getToolLabel() + " exceeded.");
         }
         
         // return blank for empty string
-        if (base.length() == 0 || !finder.hasNext()) {
-            return ret;
+        if (base.isEmpty() || !finder.hasNext()) {
+            ret = new ArrayList<>();
+        } else {
+            // split logic here to use recursion, string comparison, or regex matching
+            if (recurse) {
+                ret = getPronunciationElementsRecurse(base);
+            } else if (core.getPropertiesManager().isDisableProcRegex()) {
+                ret = getPronunciationElementsNoRegex(base, depth, beginning);
+            } else {
+                ret = getPronunciationElementsWithRegex(base, depth, beginning);
+            }
         }
 
-        // split logic here to use recursion, string comparison, or regex matching
-        if (recurse) {
-            // when using recursion, only a single node can be returned, inherently.
-            String retStr = base;
-            PronunciationNode retNode = new PronunciationNode();
-            
-            while (finder.hasNext()) {
-                PronunciationNode curNode = finder.next();
-                retStr = retStr.replaceAll(curNode.getValue(), curNode.getPronunciation());
+        return ret;
+    }
+    
+    private List<PronunciationNode> getPronunciationElementsWithRegex(String base, int depth, boolean beginning) throws Exception {
+        List<PronunciationNode> ret = new ArrayList<>();
+        
+        for (PronunciationNode curNode : pronunciations) {
+            String pattern = curNode.getValue();
+            // skip if set as starting characters, but later in word
+            if (pattern.startsWith("^") && !beginning) {
+                continue;
             }
-            
-            retNode.setPronunciation(retStr);
-            ret.add(retNode);
-        } else if (core.getPropertiesManager().isDisableProcRegex()) {
-            while (finder.hasNext()) {
-                PronunciationNode curNode = finder.next();
-                String pattern = curNode.getValue();
-                // do not overstep string
-                if (pattern.length() > base.length()) {
+
+            // original pattern
+            String origPattern = pattern;
+
+            // make pattern a starting pattern if not already, if it is already, allow it to accept following strings
+            if (pattern.startsWith("^")) {
+                pattern = "^(" + pattern.substring(1) + ").*";
+            } else {
+                pattern = "^(" + pattern + ").*";
+            }
+
+            Pattern findString = Pattern.compile(pattern);
+            Matcher matcher = findString.matcher(base);
+
+            if (matcher.matches()) {
+                String leadingChars = matcher.group(1);
+
+                // if a user has entered an empty pattern... just continue.
+                if (leadingChars.isEmpty()) {
                     continue;
                 }
+                List<PronunciationNode> temp
+                        = getPronunciationElementsWithRegex(base.substring(leadingChars.length()), depth + 1, false);
 
+                try {
+                    if (leadingChars.length() == base.length() || !temp.isEmpty()) {
+                        PronunciationNode finalNode = new PronunciationNode();
+                        finalNode.setEqual(curNode);
+                        finalNode.setPronunciation(leadingChars.replaceAll(origPattern, curNode.getPronunciation()));
+                        ret.add(finalNode);
+                        ret.addAll(temp);
+                        break;
+                    }
+                } catch (IndexOutOfBoundsException e) {
+                    throw new Exception("The pronunciation pair " + curNode.getValue() + "->"
+                            + curNode.getPronunciation() + " is generating a regex error. Please correct."
+                            + "\nError: " + e.getLocalizedMessage() + e.getClass().getName(), e);
+                }
+            }
+        }
+        
+        return ret;
+    }
+    
+    private List<PronunciationNode> getPronunciationElementsNoRegex(String base, int depth, boolean beginning) throws Exception {
+        List<PronunciationNode> ret = new ArrayList<>();
+        
+        for (PronunciationNode curNode : pronunciations) {
+            String pattern = curNode.getValue();
+            // do not overstep string
+            if (pattern.length() <= base.length()) {
                 // capture string to compare based on pattern length
                 String comp = base.substring(0, curNode.getValue().length());
 
@@ -253,7 +278,7 @@ public class PronunciationMgr {
 
                 if (comp.equals(pattern)) {
                     List<PronunciationNode> temp
-                            = getPronunciationElements(base.substring(pattern.length(), base.length()), depth + 1);
+                            = getPronunciationElementsNoRegex(base.substring(pattern.length()), depth + 1, false);
 
                     // if lengths are equal, success! return. If unequal and no further match found-failure
                     if (pattern.length() == base.length() || !temp.isEmpty()) {
@@ -263,56 +288,25 @@ public class PronunciationMgr {
                     }
                 }
             }
-        } else {
-            while (finder.hasNext()) {
-            PronunciationNode curNode = finder.next();
-            String pattern = curNode.getValue();
-                // skip if set as starting characters, but later in word
-                if (pattern.startsWith("^") && depth != 0) {
-                    continue;
-                }
+        }
+        
+        return ret;
+    }
+    
+    private List<PronunciationNode> getPronunciationElementsRecurse(String base) {
+        List<PronunciationNode> ret = new ArrayList<>();
+        
+        // when using recursion, only a single node can be returned, inherently.
+        String retStr = base;
+        PronunciationNode retNode = new PronunciationNode();
 
-                // original pattern
-                String origPattern = pattern;
-
-                // make pattern a starting pattern if not already, if it is already, allow it to accept following strings
-                if (!pattern.startsWith("^")) {
-                    pattern = "^(" + pattern + ").*";
-                } else {
-                    pattern = "^(" + pattern.substring(1) + ").*";
-                }
-
-                Pattern findString = Pattern.compile(pattern);
-                Matcher matcher = findString.matcher(base);
-
-                if (matcher.matches()) {
-                    String leadingChars = matcher.group(1);
-
-                    // if a user has entered an empty pattern... just continue.
-                    if (leadingChars.length() == 0) {
-                        continue;
-                    }
-                    List<PronunciationNode> temp
-                            = getPronunciationElements(base.substring(leadingChars.length(), base.length()), depth + 1);
-
-                    try {
-                        if (leadingChars.length() == base.length() || !temp.isEmpty()) {
-                            PronunciationNode finalNode = new PronunciationNode();
-                            finalNode.setEqual(curNode);
-                            finalNode.setPronunciation(leadingChars.replaceAll(origPattern, curNode.getPronunciation()));
-                            ret.add(finalNode);
-                            ret.addAll(temp);
-                            break;
-                        }
-                    } catch (IndexOutOfBoundsException e) {
-                        throw new Exception("The pronunciation pair " + curNode.getValue() + "->"
-                                + curNode.getPronunciation() + " is generating a regex error. Please correct."
-                                + "\nError: " + e.getLocalizedMessage() + e.getClass().getName());
-                    }
-                }
-            }
+        for (PronunciationNode curNode : pronunciations) {
+            retStr = retStr.replaceAll(curNode.getValue(), curNode.getPronunciation());
         }
 
+        retNode.setPronunciation(retStr);
+        ret.add(retNode);
+        
         return ret;
     }
 
@@ -323,13 +317,13 @@ public class PronunciationMgr {
      * @param rootElement root element of document
      */
     public void writeXML(Document doc, Element rootElement) {
-        Element collection = doc.createElement(PGTUtil.etymologyCollectionXID);
+        Element collection = doc.createElement(PGTUtil.ETYMOLOGY_COLLECTION_XID);
         
         rootElement.appendChild(collection);
         
-        Element recurseNode = doc.createElement(PGTUtil.proGuideRecurseXID);
+        Element recurseNode = doc.createElement(PGTUtil.PRO_GUIDE_RECURSIVE_XID);
         recurseNode.appendChild(doc.createTextNode(recurse ?
-                PGTUtil.True : PGTUtil.False));
+                PGTUtil.TRUE : PGTUtil.FALSE));
         collection.appendChild(recurseNode);
         
         pronunciations.forEach((proc)->{
@@ -337,18 +331,12 @@ public class PronunciationMgr {
         });
     }
 
-    /**
-     * @return the recurse
-     */
     public boolean isRecurse() {
         return recurse;
     }
 
-    /**
-     * @param recurse the recurse to set
-     */
-    public void setRecurse(boolean recurse) {
-        this.recurse = recurse;
+    public void setRecurse(boolean _recurse) {
+        this.recurse = _recurse;
     }
     
     /**
@@ -357,5 +345,146 @@ public class PronunciationMgr {
      */
     public boolean isInUse() {
         return !pronunciations.isEmpty();
+    }
+    
+    public boolean isEmpty() {
+        return pronunciations.isEmpty();
+    }
+    
+    @Override
+    public boolean equals(Object comp) {
+        boolean ret = false;
+        
+        if (this == comp) {
+            ret = true;
+        } else if (comp instanceof PronunciationMgr) {
+            PronunciationMgr compProp = (PronunciationMgr)comp;
+            
+            ret = recurse == compProp.recurse
+                    && pronunciations.equals(compProp.pronunciations);
+        }
+        
+        return ret;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 97 * hash + (this.recurse ? 1 : 0);
+        hash = 97 * hash + Objects.hashCode(this.pronunciations);
+        return hash;
+    }
+    
+    /**
+     * Tests whether look-ahead or look-behind patterns are being used
+     * @return 
+     */
+    public boolean usingLookaheadsLookbacks() {
+        boolean ret = false;
+        
+        for (PronunciationNode curNode : pronunciations) {
+            String pattern = curNode.getValue();
+            
+            // checks for all positive and negative lookaheads and lookbehinds
+            if (isRegexLookaheadBehind(pattern)) {
+                ret = true;
+                break;
+            }
+        }
+        
+        return ret;
+    }
+    
+    /**
+     * Returns true if a given regex pattern passed in contains look-ahead or look-behinds
+     * @param testRegex
+     * @return 
+     */
+    public static boolean isRegexLookaheadBehind(String testRegex) {
+        return testRegex.matches(".*\\((\\?=|\\?\\!|\\?<=|\\?<!).+?\\).*");
+    }
+    
+    /**
+     * Generates and returns a map of characters to to the IPA sounds that they
+     * can create and their context. The returned map has values which come in
+     * pairs. Each pair of two represents; 
+     * 1) The IPA character which is pronounced as a result of the key alphabetic character
+     * 2) The context within which the key alphabetic character creates the IPA character
+     * @return 
+     */
+    public Map<String, String[]> getIpaSoundsPerCharacter() {
+        Map<String, String[]> ret = new HashMap<>();
+        String[] allIpaChars = IPAHandler.getAllIpaChars();
+        String[] alphaValues = core.getPropertiesManager().getAlphaOrder().keySet().toArray(new String[0]);
+        Map<String, List<PronunciationNode>> alphaAssociations = new HashMap<>();
+        
+        // Test if the VALUE for each pronunciation pair (containing the match pattern) includes any given
+        // alhpabetic character. If so, associate the alphabetic character with the pronunciation
+        for (PronunciationNode pronunciation : pronunciations) {
+            for (String alphaChar : alphaValues) {
+                if (pronunciation.getValue().contains(alphaChar)) {
+                    if (alphaAssociations.containsKey(alphaChar)) {
+                        alphaAssociations.get(alphaChar).add(pronunciation);
+                    } else {
+                        List<PronunciationNode> associationList = new ArrayList<>();
+                        associationList.add(pronunciation);
+                        alphaAssociations.put(alphaChar, associationList);
+                    }
+                }
+            }
+        }
+        
+        // Next, check through each REPLACEMENT pattern of every pattern for each IPA
+        // character. For those that match, add the IPA Character, then the pronunciaton
+        // VALUE to the return. Ths returns the Alphabet character as a key value leading
+        // to paired IPA characters they can represent and the situation WHEN they
+        // represent those characters
+        for (String alphaChar : alphaValues) {
+            List<String> retValues = new ArrayList<>();
+            
+            if (alphaAssociations.containsKey(alphaChar)) {
+                for (PronunciationNode procNode : alphaAssociations.get(alphaChar)) {
+                    for (String ipaChar : allIpaChars) {
+                        if (procNode.getPronunciation().contains(ipaChar) && !retValues.contains(ipaChar)) {
+                            retValues.add(ipaChar);
+                            retValues.add(procNode.getValue());
+                        }
+                    }
+                }
+            }
+            
+            ret.put(alphaChar, retValues.toArray(new String[0]));
+        }
+        
+        return ret;
+    }
+    
+    /**
+     * The inverse of getIpaSoundsPerCharacter
+     * @return 
+     */
+    public Map<String, String[]> getCharactersPerIpaSound() {
+        Map<String, String[]> ret = new HashMap<>();
+        Map<String, String[]> charsPerIpa = getIpaSoundsPerCharacter();
+        
+        // values and keys are swapped
+        for (String key : charsPerIpa.keySet()) {
+            String[] values = charsPerIpa.get(key);
+            for (int i = 0; i < values.length; i += 2) {
+                String value = values[i];
+                if (ret.containsKey(value)) {
+                    List<String> curVals = new  ArrayList(Arrays.asList(ret.get(value)));
+                    if (!curVals.contains(key)) {
+                        curVals.add(key);
+                    }
+                    
+                    ret.replace(value, curVals.toArray(new String[0]));
+                } else {
+                    ret.put(value, new String[]{key});
+                }
+            }
+        }
+        
+        return ret;
     }
 }

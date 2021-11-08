@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2015-2018, Draque Thompson
+ * Copyright (c) 2015-2021, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
- *  See LICENSE.TXT included with this code to read the full license agreement.
+ * Licensed under: MIT Licence
+ * See LICENSE.TXT included with this code to read the full license agreement.
 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -19,13 +19,15 @@
  */
 package PolyGlot.ManagersCollections;
 
-import PolyGlot.CustomControls.GrammarSectionNode;
 import PolyGlot.CustomControls.GrammarChapNode;
 import PolyGlot.PGTUtil;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import PolyGlot.DictCore;
+import java.util.Arrays;
+import java.util.Objects;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -34,13 +36,19 @@ import org.w3c.dom.Element;
  * @author draque
  */
 public class GrammarManager {
-    private final List<GrammarChapNode> chapters = new ArrayList<>();
-    private final Map<Integer, byte[]> soundMap;
-    private GrammarChapNode buffer;
+    protected final List<GrammarChapNode> chapters;
+    protected final Map<Integer, byte[]> soundMap;
+    protected GrammarChapNode buffer;
+    protected DictCore core;
     
     public GrammarManager() {
         soundMap = new HashMap<>();
+        chapters = new ArrayList<>();
         buffer = new GrammarChapNode(this);
+    }
+    
+    public void setCore(DictCore _core) {
+        core = _core;
     }
     
     /**
@@ -60,17 +68,6 @@ public class GrammarManager {
     }
     
     /**
-     * clears chapter buffer
-     */
-    public void clear() {
-        buffer = new GrammarChapNode(this);
-    }
-    
-    public List<GrammarChapNode> getChapters() {
-        return chapters;
-    }
-
-    /**
      * Adds new chapter to index
      * @param newChap new chapter to add
      */
@@ -80,6 +77,20 @@ public class GrammarManager {
     
     public Map<Integer, byte[]> getSoundMap() {
         return soundMap;
+    }
+    
+    /**
+     * Writes all Grammar information to XML document
+     * @param doc Document to write to
+     * @param rootElement root element of document
+     */
+    public void writeXML(Document doc, Element rootElement) {
+        Element grammarRoot = doc.createElement(PGTUtil.GRAMMAR_SECTION_XID);
+        rootElement.appendChild(grammarRoot);
+        
+        chapters.forEach((chapter)->{
+            chapter.writeXML(doc, grammarRoot);
+        });
     }
     
     /**
@@ -104,10 +115,6 @@ public class GrammarManager {
     }
     
     /**
-     * builds and returns new grammar node
-     */
-    
-    /**
      * Adds or changes a grammar recording.
      * @param id ID of sound to replace. -1 if newly adding
      * @param newRec New wave recording
@@ -122,12 +129,11 @@ public class GrammarManager {
         
         if (ret == -1) {
             for (ret = 0; soundMap.containsKey(ret); ret++){}
-            soundMap.put(ret, newRec);
         } else {
             soundMap.remove(ret);
-            soundMap.put(ret, newRec);
         }
-        
+        soundMap.put(ret, newRec);
+
         return ret;
     }
     
@@ -143,27 +149,60 @@ public class GrammarManager {
         }
         
         return ret;
-    }    
+    }
     
-    /**
-     * Creates a new grammar section node
-     * @return new section node
-     */
-    public GrammarSectionNode getNewSection() {
-        return new GrammarSectionNode(this);
+    public boolean isEmpty() {
+        return chapters.isEmpty();
     }
     
     /**
-     * Writes all Grammar information to XML document
-     * @param doc Document to write to
-     * @param rootElement root element of document
+     * clears chapter buffer
      */
-    public void writeXML(Document doc, Element rootElement) {
-        Element grammarRoot = doc.createElement(PGTUtil.grammarSectionXID);
-        rootElement.appendChild(grammarRoot);
+    public void clear() {
+        buffer = new GrammarChapNode(this);
+    }
+    
+    public GrammarChapNode[] getChapters() {
         
-        chapters.forEach((chapter)->{
-            chapter.writeXML(doc, grammarRoot);
-        });
+        return chapters.toArray(new GrammarChapNode[0]);
+    }
+    
+    @Override
+    public boolean equals(Object comp) {
+        boolean ret = false;
+        
+        if (comp == this) {
+            ret = true;
+        } else if (comp instanceof GrammarManager) {
+            GrammarManager compMan = (GrammarManager)comp;
+            ret = chapters.equals(compMan.chapters);
+            
+            if (ret) {
+                for (Object o : soundMap.entrySet().toArray()) {
+                    Map.Entry<Integer, byte[]> entry = (Map.Entry<Integer, byte[]>)o;
+
+                    int id = entry.getKey();
+                    byte[] soundVal = entry.getValue();
+
+                    ret = compMan.soundMap.containsKey(id);
+
+                    if (ret) {
+                        ret = Arrays.equals(soundVal, compMan.soundMap.get(id));
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+        
+        return ret;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 89 * hash + Objects.hashCode(this.chapters);
+        hash = 89 * hash + Objects.hashCode(this.soundMap);
+        return hash;
     }
 }

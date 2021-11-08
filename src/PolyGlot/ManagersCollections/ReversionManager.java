@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2018, DThompson
+ * Copyright (c) 2018-2019, Draque Thompson
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
- *  See LICENSE.TXT included with this code to read the full license agreement.
+ * Licensed under: MIT Licence
+ * See LICENSE.TXT included with this code to read the full license agreement.
 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -25,6 +25,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import PolyGlot.PGTUtil;
 
 /**
  * This keeps track of reversion versions of a language and handles their interaction/rollbacks with the larger
@@ -34,6 +35,7 @@ import java.util.List;
 public class ReversionManager {
     private List<ReversionNode> reversionList = new ArrayList<>();
     private final DictCore core;
+    private int maxReversionCount = PGTUtil.DEFAULT_MAX_ROLLBACK_NUM;
     
     public ReversionManager(DictCore _core) {
         core = _core;
@@ -46,44 +48,47 @@ public class ReversionManager {
      * @param saveTime The time at which this was saved
      */
     public void addVersion(byte[] addVersion, Instant saveTime) {
-        ReversionNode reversion = new ReversionNode(addVersion, this);
-        reversion.saveTime = saveTime;
+        ReversionNode reversion = new ReversionNode(addVersion, saveTime, core);
         reversionList.add(0, reversion);
         
-        int maxVersions = core.getOptionsManager().getMaxReversionCount();
-        if (reversionList.size() > maxVersions && maxVersions != 0) {
-            reversionList = reversionList.subList(0, maxVersions);
-        }
+        trimReversions();
     }
     
     /**
      * Adds a version to the end of the list. (used when loading from file)
      * @param addVersion byte array of raw XML of language file
-     * @param saveTime
      */
-    public void addVersionToEnd(byte[] addVersion, Instant saveTime) {
-        ReversionNode reg = new ReversionNode(addVersion, this);
-        reg.saveTime = saveTime;
+    public void addVersionToEnd(byte[] addVersion) {
+        ReversionNode reg = new ReversionNode(addVersion, core);
         reversionList.add(reg);
     }
 
-    public List<ReversionNode> getReversionList() {
+    public ReversionNode[] getReversionList() {
         Collections.sort(reversionList);
-        return reversionList;
+        return reversionList.toArray(new ReversionNode[0]);
     }
     
     public int getMaxReversionsCount() {
-        return core.getOptionsManager().getMaxReversionCount();
+        return maxReversionCount;
+    }
+    
+    public void setMaxReversionCount(int maxRollbackVersions) {
+        setMaxReversionCount(maxRollbackVersions, false);
+    }
+    
+    public void setMaxReversionCount(int maxRollbackVersions, boolean trimRevisions) {
+        this.maxReversionCount = maxRollbackVersions;
+        if(trimRevisions) trimReversions();
     }
     
     /**
      * Trims reversions down to the max number allowed in the options
      */
     public void trimReversions() {
-        int maxReversions = core.getOptionsManager().getMaxReversionCount();
+        int maxVersions = maxReversionCount;
         
-        if (reversionList.size() > maxReversions) {
-            reversionList = reversionList.subList(0, maxReversions);
+        if (reversionList.size() > maxVersions && maxVersions != 0) {
+            reversionList = reversionList.subList(0, maxVersions);
         }
     }
 }

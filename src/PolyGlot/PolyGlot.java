@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2019-2020, Draque Thompson, draquemail@gmail.com
+ * Copyright (c) 2020 - 2021, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
+ * Licensed under: MIT License
  * See LICENSE.TXT included with this code to read the full license agreement.
 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -90,14 +90,14 @@ public class PolyGlot {
                     pdf.setSubTitleText(args[4]);
                     pdf.setCoverImagePath(args[5]);
                     pdf.setForewardText(args[6]);
-                    pdf.setPrintAllConjugations(args[7].toUpperCase().equals(PGTUtil.True));
-                    pdf.setPrintConLocal(args[8].toUpperCase().equals(PGTUtil.True));
-                    pdf.setPrintGlossKey(args[9].toUpperCase().equals(PGTUtil.True));
-                    pdf.setPrintGrammar(args[10].toUpperCase().equals(PGTUtil.True));
-                    pdf.setPrintLocalCon(args[11].toUpperCase().equals(PGTUtil.True));
-                    pdf.setPrintOrtho(args[12].toUpperCase().equals(PGTUtil.True));
-                    pdf.setPrintPageNumber(args[13].toUpperCase().equals(PGTUtil.True));
-                    pdf.setPrintWordEtymologies(args[14].toUpperCase().equals(PGTUtil.True));
+                    pdf.setPrintAllConjugations(args[7].toUpperCase().equals(PGTUtil.TRUE));
+                    pdf.setPrintConLocal(args[8].toUpperCase().equals(PGTUtil.TRUE));
+                    pdf.setPrintGlossKey(args[9].toUpperCase().equals(PGTUtil.TRUE));
+                    pdf.setPrintGrammar(args[10].toUpperCase().equals(PGTUtil.TRUE));
+                    pdf.setPrintLocalCon(args[11].toUpperCase().equals(PGTUtil.TRUE));
+                    pdf.setPrintOrtho(args[12].toUpperCase().equals(PGTUtil.TRUE));
+                    pdf.setPrintPageNumber(args[13].toUpperCase().equals(PGTUtil.TRUE));
+                    pdf.setPrintWordEtymologies(args[14].toUpperCase().equals(PGTUtil.TRUE));
                     pdf.setConFontLocation(args[15]);
                     pdf.setPrintVersion(args[16]);
 
@@ -123,10 +123,10 @@ public class PolyGlot {
         String ret;
 
         // if hidden, 5th argument is true, return error stack trace
-        if (args.length == 4 || (args.length == 5 && args[4].equals(PGTUtil.True))) {
+        if (args.length == 4 || (args.length == 5 && args[4].equals(PGTUtil.TRUE))) {
             String exportFrom = args[1];
             String exportTo = args[2];
-            boolean separateDeclensions = args[3].toUpperCase().equals(PGTUtil.True);
+            boolean separateDeclensions = args[3].toUpperCase().equals(PGTUtil.TRUE);
 
             try {
                 DictCore core = new DictCore();
@@ -136,20 +136,20 @@ public class PolyGlot {
                     ExcelExport.exportExcelDict(exportTo, core, separateDeclensions);
                     ret = SUCCESS;
                 } catch (IOException e) {
-                    if (args.length == 5 && args[4].equals(PGTUtil.True)) {
+                    if (args.length == 5 && args[4].equals(PGTUtil.TRUE)) {
                         ret = ExceptionUtils.getStackTrace(e);
                     } else {
                         ret = "ERROR: Unable to export to: " + exportTo;
                     }
                 }
             } catch (IOException | IllegalStateException e) {
-                if (args.length == 5 && args[4].equals(PGTUtil.True)) {
+                if (args.length == 5 && args[4].equals(PGTUtil.TRUE)) {
                     ret = ExceptionUtils.getStackTrace(e);
                 } else {
                     ret = "ERROR: Unable to read PolyGlot file: " + exportFrom;
                 }
             } catch (FontFormatException e) {
-                if (args.length == 5 && args[4].equals(PGTUtil.True)) {
+                if (args.length == 5 && args[4].equals(PGTUtil.TRUE)) {
                     ret = ExceptionUtils.getStackTrace(e);
                 } else {
                     ret = "ERROR: Unable to load font from PolyGlot archive: " + e.getLocalizedMessage();

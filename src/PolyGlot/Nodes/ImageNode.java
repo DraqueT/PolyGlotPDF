@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2016, Draque
+ * Copyright (c) 2014-2019, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
- *  See LICENSE.TXT included with this code to read the full license agreement.
+ * Licensed under: MIT Licence
+ * See LICENSE.TXT included with this code to read the full license agreement.
 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -19,73 +19,103 @@
  */
 package PolyGlot.Nodes;
 
-import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import javax.imageio.ImageIO;
+import java.util.Arrays;
+import PolyGlot.DictCore;
+import PolyGlot.IOHandler;
 
 /**
  *
  * @author Draque
  */
 public class ImageNode extends DictNode {
-    private BufferedImage image = null;
+
+    private DictCore core;
+    private byte[] imageBytes = null;
     private File tmpFile = null;
     
-    /**
-     * Sets image equal to.
-     * Only sets equal the buffered image and the id. Nothing else.
-     * @param _node
-     * @throws ClassCastException 
-     */
-    @Override
-    public void setEqual(DictNode _node) throws ClassCastException {
-        if (!(_node instanceof ImageNode)) {
-            throw new ClassCastException("Cannot convert type: " 
-                    + _node.getClass().getName() + " to type ImageNode.");
-        }
-        ImageNode tmpNode = (ImageNode)_node;
-        
-        image = tmpNode.getImage();
-        id = tmpNode.getId();
-    }
-
-    /**
-     * @return the image
-     */
-    public BufferedImage getImage() {
-        return image;
-    }
-
-    /**
-     * @param _image the image to set
-     */
-    public void setImage(BufferedImage _image) {
-        image = _image;
+    public ImageNode(DictCore _core) {
+        super();
+        core = _core;
     }
     
     /**
-     * Gets path to temporary file in which image has been stored (if one exists)
-     * for consumption in HTML based text areas
+     * @param _imageBytes the image bytes to set
+     */
+    public void setImageBytes(byte[] _imageBytes) {
+        imageBytes = _imageBytes;
+    }
+
+    /**
+     * Gets path to temporary file in which image has been stored (if one
+     * exists) for consumption in HTML based text areas
+     *
      * @return path of image file
      * @throws java.io.IOException on file read error, or image not initialized
      */
     public String getImagePath() throws IOException {
-        if (image == null) {
+        if (imageBytes == null) {
             throw new IOException("Image not instantiated. Cannot generate path.");
         }
-        
+
         if (id == -1) {
             throw new IOException("Image not inserted into image collection (id = -1). Cannot generate path.");
         }
-        
+
         // create tmp file if none exists
         if (tmpFile == null || !tmpFile.exists()) {
-            tmpFile = File.createTempFile(id.toString() + "_polyGlotImage", ".png");
-            ImageIO.write(image, "PNG", new FileOutputStream(tmpFile));
+            tmpFile = IOHandler.createTmpFileFromImageBytes(imageBytes, id + "_polyGlotImage");
         }
-        
+
         return tmpFile.getAbsolutePath();
+    }
+
+    /**
+     * Sets image equal to. Only sets equal the buffered image and the id.
+     * Nothing else.
+     *
+     * @param _node
+     * @throws ClassCastException
+     */
+    @Override
+    public void setEqual(DictNode _node) throws ClassCastException {
+        if (!(_node instanceof ImageNode)) {
+            String name = _node == null ? "null" : _node.getClass().getName();
+            throw new ClassCastException("Cannot convert type: "
+                    + name + " to type ImageNode.");
+        }
+        ImageNode tmpNode = (ImageNode) _node;
+
+        imageBytes = tmpNode.imageBytes;
+        id = tmpNode.getId();
+    }
+    
+    /**
+     * @return the image bytes
+     */
+    public byte[] getImageBytes() {
+        return imageBytes;
+    }
+
+    @Override
+    public boolean equals(Object comp) {
+        boolean ret = false;
+
+        if (this == comp) {
+            ret = true;
+        } else if (comp instanceof ImageNode) {
+            ImageNode c = (ImageNode) comp;
+
+            ret = (imageBytes == null) || Arrays.equals(imageBytes, c.imageBytes);
+            ret = ret && value.equals(c.value);
+        }
+
+        return ret;
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
     }
 }

@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2014-2018, Draque Thompson, draquemail@gmail.com
+* Copyright (c) 2014-2020, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
+ * Licensed under: MIT Licence
  * See LICENSE.TXT included with this code to read the full license agreement.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -20,23 +20,46 @@
 // This is the type which all nodes and storage types extend.
 package PolyGlot.Nodes;
 
+import java.util.Objects;
 import PolyGlot.CustomControls.PAlphaMap;
+import PolyGlot.ManagersCollections.DictionaryCollection;
 
 /**
  *
  * @author draque
  */
 public abstract class DictNode implements Comparable<DictNode> {
-    protected String value = "";
-    protected Integer id = 0;    
-    private PAlphaMap<String, Integer> alphaOrder = new PAlphaMap<>(); // used for alphabetic ordering of nodes
+    protected String value;
+    protected Integer id;    
+    private DictionaryCollection parent = null;
 
+    @Override
+    abstract public boolean equals(Object comp);
+
+    @Override
+    public int hashCode() {
+        int hash = 5;
+        hash = 83 * hash + Objects.hashCode(this.value);
+        hash = 83 * hash + Objects.hashCode(this.id);
+        return hash;
+    }
+    
+    protected DictNode() {
+        value = "";
+        id = 0;
+    }
+    
+    protected DictNode(int _id) {
+        id = _id;
+        value = "";
+    }
+    
     /**
      * Sets a node equal to the argument node
      *
      * @param _node Node to set all values equal to.
      */
-    abstract public void setEqual(DictNode _node) throws ClassCastException;
+    public abstract void setEqual(DictNode _node) throws ClassCastException;
 
     public void setId(Integer _id) {
         id = _id;
@@ -46,8 +69,8 @@ public abstract class DictNode implements Comparable<DictNode> {
         return id;
     }
 
-    public void setAlphaOrder(PAlphaMap<String, Integer> _alphaOrder) {
-        alphaOrder = _alphaOrder;
+    public void setParent(DictionaryCollection _parent) {
+        parent = _parent;
     }
 
     public String getValue() {
@@ -66,15 +89,16 @@ public abstract class DictNode implements Comparable<DictNode> {
      */
     @Override
     public int compareTo(DictNode _compare) {
+        PAlphaMap<String, Integer> alphaOrder = getAlphaOrder();
         final int BEFORE = -1;
         final int EQUAL = 0;
         final int AFTER = 1;
         final String comp = _compare.getValue();
         final String me = this.getValue();
         int ret;
-
-        // if no alpha order established whatsoever, use default
-        if (this.alphaOrder.isEmpty()) {
+        
+        // if no alpha order established whatsoever or if parent is missing characters, use default sort
+        if (alphaOrder.isMissingChars() || alphaOrder.isEmpty()) {
             ret = me.compareTo(comp);
         } else {
             if (comp.equals(me) || (comp.isEmpty() && me.isEmpty())) {
@@ -92,20 +116,20 @@ public abstract class DictNode implements Comparable<DictNode> {
                 int compAlpha = -1;
                 int preLen = 0;
 
-                for (int i = meLen > longest ? longest : meLen; i >= 0; i--) {
+                for (int i = Math.min(meLen, longest); i >= 0; i--) {
                     String mePrefix = me.substring(0, i);
 
                     if (alphaOrder.containsKey(mePrefix)) {
-                        meAlpha = (int) alphaOrder.get(mePrefix);
+                        meAlpha = alphaOrder.get(mePrefix);
                         break;
                     }
                 }
                 
-                for (int i = compLen > longest ? longest : compLen; i >= 0; i--) {
+                for (int i = Math.min(compLen, longest); i >= 0; i--) {
                     String compPrefix = comp.substring(0, i);
 
                     if (alphaOrder.containsKey(compPrefix)) {
-                        compAlpha = (int) alphaOrder.get(compPrefix);
+                        compAlpha = alphaOrder.get(compPrefix);
                         preLen = compPrefix.length(); // record length for substring truncation if current patterns are equal
                         break;
                     }
@@ -129,8 +153,8 @@ public abstract class DictNode implements Comparable<DictNode> {
                     ConWord compChild = new ConWord();
                     ConWord thisChild = new ConWord();
 
-                    compChild.setAlphaOrder(alphaOrder);
-                    thisChild.setAlphaOrder(alphaOrder);
+                    compChild.setParent(parent);
+                    thisChild.setParent(parent);
 
                     compChild.setValue(_compare.getValue().substring(preLen));
                     thisChild.setValue(this.getValue().substring(preLen));
@@ -142,9 +166,21 @@ public abstract class DictNode implements Comparable<DictNode> {
 
         return ret;
     }
+    
+    private PAlphaMap<String, Integer> getAlphaOrder() {
+        PAlphaMap<String, Integer> ret;
+        
+        if (parent == null) {
+            ret = new PAlphaMap<>();
+        } else {
+            ret = parent.getAlphaOrder();
+        }
+        
+        return ret;
+    }
 
     @Override
     public String toString() {
-        return value.length() == 0 ? " " : value;
+        return value.isEmpty() ? " " : value;
     }
 }

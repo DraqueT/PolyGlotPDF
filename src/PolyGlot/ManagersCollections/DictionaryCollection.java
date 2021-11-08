@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2014-2018, Draque Thompson, draquemail@gmail.com
+ * Copyright (c) 2014-2020, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
+ * Licensed under: MIT Licence
  * See LICENSE.TXT included with this code to read the full license agreement.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -23,10 +23,12 @@ package PolyGlot.ManagersCollections;
 import PolyGlot.CustomControls.PAlphaMap;
 import PolyGlot.Nodes.DictNode;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 
 /**
@@ -34,57 +36,61 @@ import java.util.Random;
  * @author draque
  * @param <N> Type of node
  */
-public abstract class DictionaryCollection<N> {
+public abstract class DictionaryCollection<N extends DictNode> {
 
-    protected PAlphaMap<String, Integer> alphaOrder;
+    protected PAlphaMap<String, Integer> alphaOrder = new PAlphaMap<>();
     protected final Map<Integer, N> nodeMap = new HashMap<>();
     protected N bufferNode;
 
     private int highestNodeId = 1;
 
+    protected DictionaryCollection(N _bufferNode) {
+        bufferNode = _bufferNode;
+    }
+    
     /**
      * Clears value of collection's current buffer
      *
      */
-    abstract public void clear();
+    public abstract void clear();
     
     /**
      * Returns an error type node with not-found information of an appropriate type
-     * @return nout-found node
+     * @return not-found node
      */
-    abstract public Object notFoundNode();
+    public abstract N notFoundNode();
     
-    public int addNode(DictNode _addType) throws Exception {
+    public int addNode(N _addType) throws Exception {
         int ret;
         
         clear();
         
-        ((DictNode)bufferNode).setEqual(_addType);
+        bufferNode.setEqual(_addType);
 
         ret = this.insert(bufferNode);
 
         return ret;
     }
-    
+
     /**
      * @param _id ID of node to replace
-     * @param _modNode Node to replace prior word with
+     * @param _modNode Node to replace prior node with
      * @throws Exception Throws exception when ID matches no node in collection
      */
     public void modifyNode(Integer _id, N _modNode) throws Exception {
         if (!nodeMap.containsKey(_id)) {
-            throw new Exception("No node with id: " + _id.toString()
+            throw new Exception("No node with id: " + _id
                     + "; cannot modify value.");
         }
         if (_id < 1) {
             throw new Exception("Id can never be less than 1.");
         }
-        
-        DictNode myNode = (DictNode)_modNode;
+
+        DictNode myNode = _modNode;
 
         myNode.setId(_id);
-        myNode.setAlphaOrder(alphaOrder);
-        
+        myNode.setParent(this);
+
         nodeMap.remove(_id);
         nodeMap.put(myNode.getId(), _modNode);
     }
@@ -103,13 +109,13 @@ public abstract class DictionaryCollection<N> {
      * @param _id
      * @return 
      */
-    public Object getNodeById(Integer _id) {
-        Object ret;
-        
-        if (!nodeMap.containsKey(_id)) {
-            ret = this.notFoundNode();
-        } else {
+    public N getNodeById(Integer _id) {
+        N ret;
+
+        if (nodeMap.containsKey(_id)) {
             ret = nodeMap.get(_id);
+        } else {
+            ret = this.notFoundNode();
         }
 
         return ret;
@@ -121,7 +127,7 @@ public abstract class DictionaryCollection<N> {
      */
     public void deleteNodeById(Integer _id) throws Exception {
         if (!nodeMap.containsKey(_id)) {
-            throw new Exception("Word with ID: " + _id.toString()
+            throw new Exception("Word with ID: " + _id
                     + " not found.");
         }
 
@@ -165,31 +171,29 @@ public abstract class DictionaryCollection<N> {
      * @throws Exception if unable to insert
      */
     protected Integer insert(Integer _id, N _buffer) throws Exception {
-        DictNode myBuffer = (DictNode) _buffer;
-        myBuffer.setId(_id);
-        myBuffer.setAlphaOrder(alphaOrder);
+        DictNode myBuffer = _buffer;
 
         if (nodeMap.containsKey(_id)) {
-            throw new Exception("Duplicate ID " + _id.toString() + " for collection object: " + myBuffer.getValue());
-        }
-        if (_id < 1) {
+            throw new Exception("Duplicate ID " + _id + " for collection object: " + myBuffer.getValue());
+        } else if (_id < 1) {
             throw new Exception("Collection node ID may never be zero or less.");
-        }
-
-        nodeMap.put(_id, _buffer);
-
-        if (_id != null) {
-            // sets highest word ID, if current id is higher
-            highestNodeId = _id > highestNodeId ? _id : highestNodeId;
-        } else {
+        } else if (_id == null) {
             throw new Exception("ID cannot be null.");
         }
+
+        // sets highest word ID, if current id is higher
+        highestNodeId = _id > highestNodeId ? _id : highestNodeId;
+        myBuffer.setId(_id);
+        myBuffer.setParent(this);
+
+        nodeMap.put(_id, _buffer);
 
         return _id;
     }
     
     /**
      * Returns randomly selected nodes from the collection
+     * NOTE: returns as list because Java does not support generic arrays
      * @param numRandom number of nodes to select
      * @return Either the number of nodes requested, or the total number in the collection (if not enough)
      */
@@ -200,28 +204,149 @@ public abstract class DictionaryCollection<N> {
     /**
      * Returns randomly selected nodes from the collection, excluding a selected value
      * @param numRandom number of nodes to select
-     * @param exclude ID of element to exclude
+     * @param exclusions IDs of elements to exclude
      * @return Either the number of nodes requested, or the total number in the collection (if not enough)
      */
-    public List<N> getRandomNodes(int numRandom, Integer exclude) {
+    public List<N> getRandomNodes(int numRandom, Integer... exclusions) {
         List<N> ret = new ArrayList<>();
         List<N> allValues = new ArrayList<>(nodeMap.values());
         
         
-        if (nodeMap.containsKey(exclude)) {
-            allValues.remove(nodeMap.get(exclude));
+        for (Integer exclude : exclusions) {
+            if (nodeMap.containsKey(exclude)) {
+                allValues.remove(nodeMap.get(exclude));
+            }
         }
         
-        // randommize order...
+        // randomize order...
         Collections.shuffle(allValues, new Random(System.nanoTime()));
         
         // can't return more than exist in the collection
-        numRandom = numRandom > allValues.size() ? allValues.size() : numRandom;
+        numRandom = Math.min(numRandom, allValues.size());
         // select from list to return
         for (int i = 0; i < numRandom; i++) {
             ret.add(allValues.get(i));
         }
         
         return ret;
+    }
+    
+    public boolean isEmpty() {
+        return nodeMap.isEmpty();
+    }
+    
+    /**
+     * Returns all nodemap values
+     * @return 
+     */
+    public Collection<N> getAllValues() {
+        return nodeMap.values();
+    }
+    
+    @Override
+    public boolean equals(Object comp) {
+        boolean ret = false;
+        
+        if (comp instanceof DictionaryCollection) {
+            DictionaryCollection dictComp = (DictionaryCollection) comp;
+            
+            ret = ((alphaOrder == null && dictComp.alphaOrder == null) || alphaOrder.equals(dictComp.alphaOrder));
+            ret = ret && nodeMap.equals(dictComp.nodeMap);
+        }
+        
+        return ret;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 37 * hash + Objects.hashCode(this.nodeMap);
+        return hash;
+    }
+    
+    /**
+     * Generates mapping of node's string values to node objects. Lists are returned
+     * rather than raw objects, as many collections allow for nodes with duplicate
+     * value fields.
+     * 
+     * @return Map of node value -> list of nodes with this value
+     */
+    public Map<String, List<N>> getValueMapping() {
+        Map<String, List<N>> ret = new HashMap<>();
+        
+        for (N node : nodeMap.values()) {
+            String nodeVal = node.getValue();
+            List<N> nodeList;
+            
+            if (ret.containsKey(nodeVal)) {
+                nodeList = ret.get(nodeVal);
+            } else {
+                nodeList = new ArrayList<>();
+                ret.put(nodeVal, nodeList);
+            }
+            
+            nodeList.add(node);
+        }
+        
+        return ret;
+    }
+    
+    /**
+     * Safely sorts a list of the collection
+     * (Accounts for possible failure due to incomplete/incoherent alphabet written by user)
+     * @param sort 
+     */
+    public void safeSort(List<N> sort) {
+        try {
+            alphaOrder.setMissingChars(false);
+            Collections.sort(sort);
+        } catch (Exception e) {
+            alphaOrder.setMissingChars(true);
+            Collections.sort(sort);
+        }
+    }
+    
+    /**
+     * Returns true if DictionaryCollection is able to sort safely
+     * Surpresses errors
+     * @return 
+     */
+    public boolean canSafelySort() {
+        boolean ret = false;
+        
+        try {
+            ret = canSafelySort(false);
+        } catch (Exception e) {
+            // do nothing. this is explicitly surpressing errors
+        }
+        
+        return ret;
+    }
+    
+    /**
+     * Returns true if DictionaryCollection is able to sort safely
+     * @param throwError
+     * @return 
+     * @throws java.lang.Exception 
+     */
+    public boolean canSafelySort(boolean throwError) throws Exception {
+        boolean ret = true;
+        
+        try {
+            Collections.sort(new ArrayList<>(nodeMap.values()));
+        } catch (Exception e) {
+            if (throwError) {
+                throw new Exception(e);
+                // planned exception, do not log
+            }
+            
+            ret = false;
+        }
+        
+        return ret;
+    }
+    
+    public PAlphaMap<String, Integer> getAlphaOrder() {
+        return alphaOrder;
     }
 }

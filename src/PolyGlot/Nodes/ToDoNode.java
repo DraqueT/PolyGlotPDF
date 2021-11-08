@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2018, DThompson
+ * Copyright (c) 2014-2020, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
- *  See LICENSE.TXT included with this code to read the full license agreement.
+ * Licensed under: MIT Licence
+ * See LICENSE.TXT included with this code to read the full license agreement.
 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -22,6 +22,7 @@ package PolyGlot.Nodes;
 import PolyGlot.PGTUtil;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -31,13 +32,13 @@ import org.w3c.dom.Element;
  */
 public class ToDoNode {
     private String value;
-    private ToDoNode parent;
-    private boolean isDone = false;
+    private ToDoNode parentNode;
+    private boolean isDone;
     private final List<ToDoNode> children = new ArrayList<>();
     
-    public ToDoNode(ToDoNode _parent, String _value, boolean _isDone) {
+    public ToDoNode(ToDoNode _parentNode, String _value, boolean _isDone) {
         value = _value;
-        parent = _parent;
+        parentNode = _parentNode;
         isDone = _isDone;
     }
     
@@ -45,7 +46,7 @@ public class ToDoNode {
         boolean ret = true;
         
         for (ToDoNode curNode : children) {
-            ret = ret && curNode.isDone() && curNode.allChildrenDone();
+            ret = ret && curNode.isDone && curNode.allChildrenDone();
         }
         
         return ret;
@@ -63,38 +64,20 @@ public class ToDoNode {
     }
     
     public void addChild(ToDoNode child) {
-        child.setParent(this);
+        child.parentNode = this;
         children.add(child);
     }
     
     public void setParent(ToDoNode _parent) {
-        parent = _parent;
+        parentNode = _parent;
     }
     
     /**
      * Deletes node
      */
     public void delete() {
-        if (parent != null) {
-            parent.deleteChild(this);
-        }
-    }
-    
-    /**
-     * moves node up unless already at top
-     */
-    public void moveUp() {
-        if (parent != null) {
-            parent.moveChildUp(this);
-        }
-    }
-    
-    /**
-     * Moves node down unless already at bottom
-     */
-    public void moveDown() {
-        if (parent != null) {
-            parent.moveChildDown(this);
+        if (parentNode != null) {
+            parentNode.deleteChild(this);
         }
     }
     
@@ -102,9 +85,16 @@ public class ToDoNode {
      * Deletes child from list if it is present
      * @param delNode 
      */
-    protected void deleteChild(ToDoNode delNode) {
-        if (children.contains(delNode)) {
-            children.remove(delNode);
+    public void deleteChild(ToDoNode delNode) {
+        children.remove(delNode);
+    }
+    
+    /**
+     * Deletes this node from its parent
+     */
+    public void deleteFromParent() {
+        if (parentNode != null) {
+            parentNode.deleteChild(this);
         }
     }
     
@@ -142,8 +132,8 @@ public class ToDoNode {
         }
     }
     
-    public List<ToDoNode> getChildren() {
-        return children;
+    public ToDoNode[] getChildren() {
+        return children.toArray(new ToDoNode[0]);
     }
     
     public boolean isDone() {
@@ -169,13 +159,11 @@ public class ToDoNode {
      * @param rootElement 
      */
     public void writeXML(Document doc, Element rootElement) {
-        Element writeNode = doc.createElement(PGTUtil.ToDoNodeXID);
-        Element nodeDone = doc.createElement(PGTUtil.ToDoNodeDoneXID);
-        Element nodeLabel = doc.createElement(PGTUtil.ToDoNodeLabelXID);
-        // TODO: Implement color
-        //Element nodeColor = doc.createElement(PGTUtil.ToDoNodeColorXID);
+        Element writeNode = doc.createElement(PGTUtil.TODO_NODE_XID);
+        Element nodeDone = doc.createElement(PGTUtil.TODO_NODE_DONE_XID);
+        Element nodeLabel = doc.createElement(PGTUtil.TODO_NODE_LABEL_XID);
         
-        nodeDone.appendChild(doc.createTextNode(this.isDone ? PGTUtil.True : PGTUtil.False));
+        nodeDone.appendChild(doc.createTextNode(this.isDone ? PGTUtil.TRUE : PGTUtil.FALSE));
         writeNode.appendChild(nodeDone);
         
         nodeLabel.appendChild(doc.createTextNode(value));
@@ -189,6 +177,30 @@ public class ToDoNode {
     }
     
     public ToDoNode getParent() {
-        return parent;
+        return parentNode;
+    }
+    
+    @Override
+    public boolean equals(Object comp) {
+        boolean ret = false;
+        
+        if (this == comp) {
+            ret = true;
+        } else if (comp instanceof ToDoNode) {
+            ToDoNode compNode = (ToDoNode)comp;
+            
+            ret = isDone == compNode.isDone;
+            ret = ret && value.equals(compNode.value);
+            ret = ret && children.equals(compNode.children);
+        }
+        
+        return ret;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 43 * hash + Objects.hashCode(this.children);
+        return hash;
     }
 }

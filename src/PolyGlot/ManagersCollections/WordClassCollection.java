@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2016-2018, Draque Thompson
+ * Copyright (c) 2016-2021, Draque Thompson
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
- *  See LICENSE.TXT included with this code to read the full license agreement.
+ * Licensed under: MIT Licence
+ * See LICENSE.TXT included with this code to read the full license agreement.
 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Random;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -42,16 +43,16 @@ public class WordClassCollection extends DictionaryCollection<WordClass> {
     private final DictCore core;
 
     public WordClassCollection(DictCore _core) {
-        bufferNode = new WordClass();
+        super(new WordClass());
         core = _core;
     }
 
-    public List<WordClass> getAllWordClasses() {
+    public WordClass[] getAllWordClasses() {
         List<WordClass> retList = new ArrayList<>(nodeMap.values());
 
         Collections.sort(retList);
 
-        return retList;
+        return retList.toArray(new WordClass[0]);
     }
 
     @Override
@@ -79,19 +80,18 @@ public class WordClassCollection extends DictionaryCollection<WordClass> {
         return ret;
     }
 
-    public List<WordClass> getClassesForType(int classId) {
+    public WordClass[] getClassesForType(int classId) {
         List<WordClass> ret = new ArrayList<>();
 
         nodeMap.values().forEach((prop) -> {
-        WordClass curProp = (WordClass)prop;
-            if (curProp.appliesToType(classId)
-                    || curProp.appliesToType(-1)) { // -1 is class "all"
-                ret.add(curProp);
+            if (prop.appliesToType(classId)
+                    || prop.appliesToType(-1)) { // -1 is class "all"
+                ret.add(prop);
             }
         });
 
         Collections.sort(ret);
-        return ret;
+        return ret.toArray(new WordClass[0]);
     }
 
     /**
@@ -102,26 +102,14 @@ public class WordClassCollection extends DictionaryCollection<WordClass> {
      */
     public void writeXML(Document doc, Element rootElement) {
         // element containing all classes
-        Element wordClasses = doc.createElement(PGTUtil.ClassesNodeXID);
+        Element wordClasses = doc.createElement(PGTUtil.CLASSES_NODE_XID);
 
         // creates each class
         nodeMap.values().forEach((curClass) -> {
-            ((WordClass)curClass).writeXML(doc, wordClasses);
+            curClass.writeXML(doc, wordClasses);
         });
 
         rootElement.appendChild(wordClasses);
-    }
-
-    /**
-     * Gets random assortment of word class combinations based. Number of
-     * combinations limited by parameters and by number of combinations
-     * available
-     *
-     * @param numRandom number of entries to return
-     * @return randomly generated combinations of word classes
-     */
-    public List<List<PEntry<Integer, Integer>>> getRandomPropertyCombinations(int numRandom) {
-        return getRandomPropertyCombinations(numRandom, null);
     }
 
     /**
@@ -138,9 +126,14 @@ public class WordClassCollection extends DictionaryCollection<WordClass> {
         List<List<PEntry<Integer, Integer>>> ret = new ArrayList<>();
         int offset = 0;
 
+        // combocache should generally be pre-built before something like this is done, but cover the contingency
+        if (comboCache == null) {
+            buildComboCache();
+        }
+        
         Collections.shuffle(comboCache, new Random(System.nanoTime()));
 
-        if (comboCache != null && comboCache.size() > 0) {
+        if (comboCache != null && !comboCache.isEmpty()) {
             for (int i = 0; (i - offset) < numRandom && i + offset < comboCache.size(); i++) {
                 if (propCombEqual(comboCache.get(i + offset), new ArrayList<>(excludeWord.getClassValues()))) {
                     offset++;
@@ -193,7 +186,7 @@ public class WordClassCollection extends DictionaryCollection<WordClass> {
         WordClass curProp = props.get(depth);
 
         curProp.getValues().forEach((curVal) -> {
-            ArrayList<PEntry<Integer, Integer>> newList = new ArrayList<>(curList);
+            List<PEntry<Integer, Integer>> newList = new ArrayList<>(curList);
             newList.add(new PEntry<>(curProp.getId(), curVal.getId()));
 
             // if at max depth, cease recursion
@@ -225,13 +218,17 @@ public class WordClassCollection extends DictionaryCollection<WordClass> {
     public boolean isValid(Integer classId, Integer valId) {
         boolean ret = true;
 
-        if (!nodeMap.containsKey(classId)) {
-            ret = false;
-        } else {
-            WordClass prop = (WordClass) nodeMap.get(classId);
-            if (!prop.isValid(valId)) {
+        if (nodeMap.containsKey(classId)) {
+            WordClass wordClass = nodeMap.get(classId);
+            
+            if (wordClass.isAssociative()) {
+                // This will revert to an unknown value if unable to be found
+                ret = true;
+            }else if (!wordClass.isValid(valId)) {
                 ret = false;
             }
+        } else {
+            ret = false;
         }
 
         return ret;
@@ -248,9 +245,31 @@ public class WordClassCollection extends DictionaryCollection<WordClass> {
     }
 
     @Override
-    public Object notFoundNode() {
+    public WordClass notFoundNode() {
         WordClass emptyClass = new WordClass();
         emptyClass.setValue("CLASS NOT FOUND");
         return emptyClass;
+    }
+    
+    @Override
+    public boolean equals(Object comp) {
+        boolean ret = false;
+        
+        if (this == comp) {
+            ret = true;
+        } else if (comp instanceof WordClassCollection) {
+            WordClassCollection compCol = (WordClassCollection)comp;
+            ret = ((comboCache == null && compCol.comboCache == null) || comboCache.equals(compCol.comboCache));
+            ret = ret && super.equals(comp);
+        }
+        
+        return ret;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 97 * hash + Objects.hashCode(this.comboCache);
+        return hash;
     }
 }

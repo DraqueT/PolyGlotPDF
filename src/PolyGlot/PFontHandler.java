@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020, Draque Thompson
+ * Copyright (c) 2019-2021, Draque Thompson
  * All rights reserved.
  *
  * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
@@ -25,7 +25,6 @@ import java.awt.FontFormatException;
 import java.awt.font.TextAttribute;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -65,8 +64,8 @@ public class PFontHandler {
         if (isFileZipArchive(_path)) {
             try (ZipFile zipFile = new ZipFile(_path)) {
                 ZipEntry fontEntry = isConFont
-                        ? zipFile.getEntry(PGTUtil.conFontFileName)
-                        : zipFile.getEntry(PGTUtil.localFontFileName);
+                        ? zipFile.getEntry(PGTUtil.CON_FONT_FILE_NAME)
+                        : zipFile.getEntry(PGTUtil.LOCAL_FONT_FILE_NAME);
 
                 if (fontEntry != null) {
                     final File tempFile = File.createTempFile("stream2file", ".tmp");
@@ -316,9 +315,9 @@ public class PFontHandler {
                     byte[] buffer = new byte[1024];
                     try (FileInputStream fis = new FileInputStream(fontFile)) {
                         if (isConFont) {
-                            out.putNextEntry(new ZipEntry(PGTUtil.conFontFileName));
+                            out.putNextEntry(new ZipEntry(PGTUtil.CON_FONT_FILE_NAME));
                         } else {
-                            out.putNextEntry(new ZipEntry(PGTUtil.localFontFileName));
+                            out.putNextEntry(new ZipEntry(PGTUtil.LOCAL_FONT_FILE_NAME));
                         }
                         int length;
 
@@ -331,9 +330,9 @@ public class PFontHandler {
                 }
             } else {
                 if (isConFont) {
-                    out.putNextEntry(new ZipEntry(PGTUtil.conFontFileName));
+                    out.putNextEntry(new ZipEntry(PGTUtil.CON_FONT_FILE_NAME));
                 } else {
-                    out.putNextEntry(new ZipEntry(PGTUtil.localFontFileName));
+                    out.putNextEntry(new ZipEntry(PGTUtil.LOCAL_FONT_FILE_NAME));
                 }
                 out.write(cachedFont);
                 out.closeEntry();

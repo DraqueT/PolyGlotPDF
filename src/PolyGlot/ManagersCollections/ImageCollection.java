@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2016-2019, Draque Thompson
+ * Copyright (c) 2016-2020, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
- *  See LICENSE.TXT included with this code to read the full license agreement.
+ * Licensed under: MIT Licence
+ * See LICENSE.TXT included with this code to read the full license agreement.
 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -19,57 +19,40 @@
  */
 package PolyGlot.ManagersCollections;
 
-import PolyGlot.IOHandler;
 import PolyGlot.Nodes.ImageNode;
-import java.awt.Window;
-import java.awt.image.BufferedImage;
+import PolyGlot.PGTUtil;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import PolyGlot.DictCore;
+import PolyGlot.IOHandler;
 
 /**
  *
  * @author Draque
  */
 public class ImageCollection extends DictionaryCollection<ImageNode> {
-    public ImageCollection() {
-        bufferNode = new ImageNode();
+    
+    private final DictCore core;
+    
+    public ImageCollection(DictCore _core) {
+        super(new ImageNode(_core));
+        core = _core;
     }
     
     @Override
     public void clear() {
-        bufferNode = new ImageNode();
+        bufferNode = new ImageNode(core);
+    }
+    
+    public DictCore getCore() {
+        return core;
     }
     
     /**
      * Gets list of all images
      * @return 
      */
-    public List<ImageNode> getAllImages() {
-        return new ArrayList<>(nodeMap.values());
-    }
-    
-    /**
-     * Pulls in new image from user selected file
-     * Returns null if user cancels process
-     * @param parent parent form
-     * @return ImageNode inserted into collection with populated image
-     * @throws IOException on file read error
-     */
-    public ImageNode openNewImage(Window parent) throws IOException, Exception {
-        ImageNode image = null;
-        try {
-            BufferedImage buffImg = IOHandler.openImage(parent);
-            
-            if (buffImg != null) {
-                image = new ImageNode();
-                image.setImage(buffImg);
-                insert(image);
-            }
-        } catch (IOException e) {
-            throw new IOException("Problem loading image: " + e.getLocalizedMessage());
-        }
-        return image;
+    public ImageNode[] getAllImages() {
+        return nodeMap.values().toArray(new ImageNode[0]);
     }
     
     /**
@@ -82,33 +65,26 @@ public class ImageCollection extends DictionaryCollection<ImageNode> {
     public void insert(Integer _id) throws Exception {
         super.insert(_id, bufferNode);
 
-        bufferNode = new ImageNode();
+        bufferNode = new ImageNode(core);
     }
     
-    /**
-     * Takes a buffered image, and returns a node containing it, having inserted
-     * the node with ID to persist on save
-     * @param _image Image to get node of.
-     * @return populated Image node
-     * @throws java.lang.Exception
-     */
-    public ImageNode getFromBufferedImage(BufferedImage _image) throws Exception {
-        ImageNode ret = new ImageNode();
-        ret.setImage(_image);
-        this.insert(ret);
-        
-        return ret;
+    @Override
+    public Integer insert(ImageNode _buffer) throws Exception {
+        return super.insert(_buffer);
     }
 
     @Override
-    public Object notFoundNode() {
-        ImageNode emptyImage = new ImageNode();
+    public ImageNode notFoundNode() {
+        ImageNode emptyImage = new ImageNode(core);
+        
+//        try {
+//            emptyImage.setImageBytes(IOHandler.loadImageBytes(PGTUtil.NOT_FOUND_IMAGE));
+//        } catch (IOException e) {
+//            core.getOSHandler().getIOHandler().writeErrorLog(e);
+//            core.getOSHandler().getInfoBox().error("INTERNAL ERROR", 
+//                    "Unable to locate missing-image image.\nThis is kind of an ironic error.");
+//        }
         
         return emptyImage;
-    }
-    
-    @Override
-    public ImageNode getBuffer() {
-        return (ImageNode)bufferNode;
     }
 }

@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2014-2015, Draque Thompson, draquemail@gmail.com
+ * Copyright (c) 2014-2020, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
- *  See LICENSE.TXT included with this code to read the full license agreement.
+ * Licensed under: MIT Licence
+ * See LICENSE.TXT included with this code to read the full license agreement.
 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -27,6 +27,7 @@ import PolyGlot.WebInterface;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -37,18 +38,10 @@ import org.w3c.dom.Element;
 public class FamilyManager {
     private FamNode famRoot = null;
     private FamNode buffer;
-    DictCore core;
+    private final DictCore core;
     
     public FamilyManager(DictCore _core) {
         core = _core;
-    }
-    
-    /**
-     * Returns dict core for use in nodes
-     * @return dictionary core
-     */
-    public DictCore getCore() {
-        return core;
     }
     
     /**
@@ -111,11 +104,11 @@ public class FamilyManager {
      * jumps to buffer parent, or does nothing if at root
      */
     public void bufferDone() {
-        if(buffer.getParent() == null) {
+        if(buffer.getParentNode() == null) {
             return;
         }
         
-        buffer = buffer.getParent();
+        buffer = buffer.getParentNode();
     }
     
     /**
@@ -134,37 +127,58 @@ public class FamilyManager {
      * @return an element containing all family data
      */
     private Element writeToSaveXML(Document doc, FamNode curNode) {
-        Element curElement = doc.createElement(PGTUtil.famNodeXID);
+        Element curElement = doc.createElement(PGTUtil.FAM_NODE_XID);
         
         if (curNode == null) {
             return curElement;
         }
 
         // save name
-        Element property = doc.createElement(PGTUtil.famNameXID);
+        Element property = doc.createElement(PGTUtil.FAM_NAME_XID);
         property.appendChild(doc.createTextNode(curNode.getValue()));
         curElement.appendChild(property);
         
         // save notes
-        property = doc.createElement(PGTUtil.famNotesXID);
-        property.appendChild(doc.createTextNode(WebInterface.archiveHTML(curNode.getNotes())));
+        property = doc.createElement(PGTUtil.FAM_NOTES_XID);
+        property.appendChild(doc.createTextNode(WebInterface.archiveHTML(curNode.getNotes(), core)));
         curElement.appendChild(property);
         
         // save words
-        Iterator<ConWord> wordIt = curNode.getWords();
-        while (wordIt.hasNext()) {
-            ConWord curWord = wordIt.next();
-            
-            property = doc.createElement(PGTUtil.famWordXID);
+        for (ConWord curWord : curNode.getWords()) {    
+            property = doc.createElement(PGTUtil.FAM_WORD_XID);
             property.appendChild(doc.createTextNode(curWord.getId().toString()));
             curElement.appendChild(property);
         }
         
         // save subnodes
-        curNode.getNodes().forEach((child) -> {
+        for (FamNode child : curNode.getNodes()) {
             curElement.appendChild(writeToSaveXML(doc, child));
-        });
+        }
         
         return curElement;
+    }
+    
+    
+    @Override
+    public boolean equals(Object comp) {
+        boolean ret = false;
+        
+        if (this == comp) {
+            ret = true;
+        } else if (comp instanceof FamilyManager) {
+            FamilyManager compMan = (FamilyManager)comp;
+            ret = (famRoot == null && compMan.famRoot == null) 
+                    || famRoot.equals(compMan.famRoot); 
+        }
+        
+        return ret;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 5;
+        hash = 13 * hash + Objects.hashCode(this.famRoot);
+        hash = 13 * hash + Objects.hashCode(this.buffer);
+        return hash;
     }
 }

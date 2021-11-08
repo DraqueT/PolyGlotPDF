@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2018, DThompson
+ * Copyright (c) 2014-2019, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
- *  See LICENSE.TXT included with this code to read the full license agreement.
+ * Licensed under: MIT Licence
+ * See LICENSE.TXT included with this code to read the full license agreement.
 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -19,10 +19,11 @@
  */
 package PolyGlot.Nodes;
 
-import PolyGlot.ManagersCollections.ReversionManager;
+import PolyGlot.DictCore;
 import PolyGlot.PGTUtil;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -38,34 +39,68 @@ import org.xml.sax.SAXException;
  * @author DThompson
  */
 public class ReversionNode implements Comparable<ReversionNode> {
-    public final byte[] value;
-    public Instant saveTime;
-    public final ReversionManager parent;
-        
-    public ReversionNode(byte[] _value, ReversionManager _parent) {
+    private final byte[] value;
+    private Instant saveTime;
+    private final DictCore core;
+
+    public ReversionNode(byte[] _value, DictCore _core) {
         value = _value;
-        parent = _parent;
+        saveTime = Instant.MIN;
+        core = _core;
+        
+        populateTimeFromDoc();
+    }
+    
+    public ReversionNode(byte[] _value, Instant _saveTime, DictCore _core) {
+        value = _value;
+        saveTime = _saveTime;
+        core = _core;
+    }
+    
+    /**
+     * Isolates lengthy process in individual thread
+     */
+    private void populateTimeFromDoc() {
+        new Thread() {
+            public void run() {
+                saveTime = getLastSaveTimeFromRawDoc();
+            }
+        }.start();
+    }
+    
+    private Instant getLastSaveTimeFromRawDoc() {
+        Instant ret;
+        
+        try {
+            InputStream is = new ByteArrayInputStream(value);
+            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+            Document doc;
+            doc = dBuilder.parse(is);
+            doc.getDocumentElement().normalize();
+            Node timeNode = doc.getElementsByTagName(PGTUtil.DICTIONARY_SAVE_DATE).item(0);
+            
+            if (timeNode != null) {
+                ret = Instant.parse(timeNode.getTextContent());
+            } else {
+                ret = Instant.MIN;
+            }
+        } catch (SAXException | IOException | ParserConfigurationException e) {
+//            core.getOSHandler().getIOHandler().writeErrorLog(e);
+            ret = Instant.MIN;
+        }
+        
+        return ret;
     }
     
     @Override
     public String toString() {
         String ret = "saved: ";
         
-        try {
-            // First time load for these, the saveTime won't be populated...
-            if (saveTime.equals(Instant.MIN)) {
-                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-                factory.setNamespaceAware(true);
-                DocumentBuilder builder = factory.newDocumentBuilder();
-                Document tmpDoc = builder.parse(new ByteArrayInputStream(value));
-
-                Node saveNode = tmpDoc.getElementsByTagName(PGTUtil.dictionarySaveDate).item(0);
-                saveTime = Instant.parse(saveNode.getTextContent());
-            } else {
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss").withZone(ZoneId.systemDefault());
-                ret += formatter.format(saveTime);
-            }
-        } catch (SAXException | IOException | ParserConfigurationException e) {
+        if (!saveTime.equals(Instant.MIN)) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss").withZone(ZoneId.systemDefault());
+            ret += formatter.format(saveTime);
+        } else {
             ret += "<UNKNOWN TIME>";
         }
         
@@ -76,5 +111,9 @@ public class ReversionNode implements Comparable<ReversionNode> {
     public int compareTo(ReversionNode o) {
         // returns in reverse order
         return -this.saveTime.compareTo(o.saveTime);
+    }
+    
+    public byte[] getValue () {
+        return value;
     }
 }

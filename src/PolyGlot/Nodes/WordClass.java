@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2016, Draque
+ * Copyright (c) 2016-2021, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
- *  See LICENSE.TXT included with this code to read the full license agreement.
+ * Licensed under: MIT Licence
+ * See LICENSE.TXT included with this code to read the full license agreement.
 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -19,7 +19,6 @@
  */
 package PolyGlot.Nodes;
 
-import PolyGlot.ManagersCollections.WordClassCollection;
 import PolyGlot.PGTUtil;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,10 +34,10 @@ import org.w3c.dom.Element;
  * @author Draque Thompson
  */
 public class WordClass extends DictNode {
-    private WordClassCollection parent;
     private final Map<Integer, WordClassValue> values = new HashMap<>();
     private final List<Integer> applyTypes = new ArrayList<>();
     private boolean freeText = false;
+    private boolean associative = false;
     private int topId = 0;
     public WordClassValue buffer = new WordClassValue();
     
@@ -50,29 +49,25 @@ public class WordClass extends DictNode {
     /**
      * Returns true if existing value ID is passed, false otherwise
      * @param valId value id to check
-     * @return existance of value id
+     * @return existence of value id
      */
     public boolean isValid(Integer valId) {
         return values.containsKey(valId);
     }
     
     @Override
-    public void setEqual(DictNode _node) throws ClassCastException {
+    public void setEqual(DictNode _node) {
         if (!(_node instanceof WordClass)) {
             throw new ClassCastException("Object not of type WordPropValueNode");
         }
         WordClass copyProp = (WordClass)_node;
         
         this.value = copyProp.getValue();
-        
-        copyProp.getValues().forEach((node) -> {
-            try {
-                addValue(node.getValue(), node.getId());
-            } catch (Exception e) {
-                throw new ClassCastException("Problem setting class value: " 
-                        + e.getLocalizedMessage());
-            }
-        });
+        this.values.clear();
+        this.values.putAll(copyProp.values);
+        this.applyTypes.clear();
+        this.applyTypes.addAll(copyProp.applyTypes);
+        this.freeText = copyProp.freeText;
     }
     
     /**
@@ -100,9 +95,7 @@ public class WordClass extends DictNode {
      * @param _typeId ID of type
      */
     public void deleteApplyType(Integer _typeId) {
-        if (applyTypes.contains(_typeId)) {
-            applyTypes.remove(_typeId);
-        }
+        applyTypes.remove(_typeId);
     }
     
     /**
@@ -118,8 +111,8 @@ public class WordClass extends DictNode {
      * Gets copy of list of apply types
      * @return list of int values (ids)
      */
-    public List<Integer> getApplyTypes() {
-        return new ArrayList<>(applyTypes);
+    public Integer[] getApplyTypes() {
+        return applyTypes.toArray(new Integer[0]);
     }
     
     /**
@@ -141,10 +134,6 @@ public class WordClass extends DictNode {
         }
         
         values.remove(valueId);
-        
-        if (parent != null) {
-            parent.classValueDeleted(this.id, valueId);
-        }
     }
     
     public WordClassValue getValueById(int _id) throws Exception {
@@ -170,22 +159,22 @@ public class WordClass extends DictNode {
     /**
      * Inserts value with ID (only use on file loading)
      * @param name
-     * @param id
+     * @param _id
      * @return value created
      * @throws Exception if ID already exists
      */
-    public WordClassValue addValue(String name, int id) throws Exception {
-        if (values.containsKey(id)) {
-            throw new Exception("Cannot insert value: " + name + " Id: " + id + " into " + this.value + " (already exists).");
+    public WordClassValue addValue(String name, int _id) throws Exception {
+        if (values.containsKey(_id)) {
+            throw new Exception("Cannot insert value: " + name + " Id: " + _id + " into " + this.value + " (already exists).");
         }
         
         WordClassValue ret = new WordClassValue();
-        ret.setId(id);
+        ret.setId(_id);
         ret.setValue(name);
-        values.put(id, ret);
+        values.put(_id, ret);
         
-        if (id >= topId) {
-            topId = id + 1;
+        if (_id >= topId) {
+            topId = _id + 1;
         }
         
         return ret;
@@ -205,54 +194,101 @@ public class WordClass extends DictNode {
      * Sets whether or not this represents a free text field, rather than a
      * multi-selection with predefined values
      * 
-     * @param freeText freetext value
+     * @param _freeText freetext value
      */
-    public void setFreeText(boolean freeText) {
-        this.freeText = freeText;
+    public void setFreeText(boolean _freeText) {
+        this.freeText = _freeText;
+        this.associative = !_freeText;
     }
     
-    public void setParent(WordClassCollection _parent) {
-        parent = _parent;
+    /**
+     * Whether or not this represents a free text field, rather than a multi-
+     * selection with predefined values
+     * 
+     * @return Whether the property is an associative property
+     */
+    public boolean isAssociative() {
+        return associative;
+    }
+
+    /**
+     * Sets whether or not this represents a free text field, rather than a
+     * multi-selection with predefined values
+     * 
+     * @param _associative
+     */
+    public void setAssociative(boolean _associative) {
+        this.associative = _associative;
+        this.freeText = !_associative;
     }
     
     public void writeXML(Document doc, Element rootElement) {
-        Element classElement = doc.createElement(PGTUtil.ClassXID);
+        Element classElement = doc.createElement(PGTUtil.CLASS_XID);
 
         // ID element
-        Element classValue = doc.createElement(PGTUtil.ClassIdXID);
+        Element classValue = doc.createElement(PGTUtil.CLASS_ID_XID);
         classValue.appendChild(doc.createTextNode(this.getId().toString()));
         classElement.appendChild(classValue);
 
         // Name element
-        classValue = doc.createElement(PGTUtil.ClassNameXID);
+        classValue = doc.createElement(PGTUtil.CLASS_NAME_XID);
         classValue.appendChild(doc.createTextNode(this.getValue()));
         classElement.appendChild(classValue);
 
         // Is Text Override
-        classValue = doc.createElement(PGTUtil.ClassIsFreetextXID);
-        classValue.appendChild(doc.createTextNode(this.isFreeText() ? PGTUtil.True : PGTUtil.False));
+        classValue = doc.createElement(PGTUtil.CLASS_IS_FREETEXT_XID);
+        classValue.appendChild(doc.createTextNode(this.freeText ? PGTUtil.TRUE : PGTUtil.FALSE));
+        classElement.appendChild(classValue);
+        
+        // Is class associative CLASS_IS_ASSOCIATIVE_XID
+        classValue = doc.createElement(PGTUtil.CLASS_IS_ASSOCIATIVE_XID);
+        classValue.appendChild(doc.createTextNode(this.associative ? PGTUtil.TRUE : PGTUtil.FALSE));
         classElement.appendChild(classValue);
 
         // generates element with all type IDs of types this class applies to
         String applyTypesRec = "";
         for (Integer typeId : this.getApplyTypes()) {
-            if (applyTypesRec.length() != 0) {
+            if (!applyTypesRec.isEmpty()) {
                 applyTypesRec += ",";
             }
 
             applyTypesRec += typeId.toString();
         }
-        classValue = doc.createElement(PGTUtil.ClassApplyTypesXID);
+        classValue = doc.createElement(PGTUtil.CLASS_APPLY_TYPES_XID);
         classValue.appendChild(doc.createTextNode(applyTypesRec));
         classElement.appendChild(classValue);
 
         // element for collection of values of class
-        classValue = doc.createElement(PGTUtil.ClassValuesCollectionXID);
+        classValue = doc.createElement(PGTUtil.CLASS_VALUES_COLLECTION_XID);
         for (WordClassValue curValue : this.getValues()) {
             curValue.writeXML(doc, classValue);
         }
         classElement.appendChild(classValue);
 
         rootElement.appendChild(classElement);
+    }
+    
+    @Override
+    public boolean equals(Object comp) {
+        boolean ret = false;
+        
+        if (this == comp) {
+            ret = true;
+        } else if (comp != null && getClass() == comp.getClass()) {
+            WordClass c = (WordClass) comp;
+            
+            ret = value.equals(c.value);
+            ret = ret && values.equals(c.values);
+            ret = ret && applyTypes.equals(c.applyTypes);
+            ret = ret && freeText == c.freeText;
+            ret = ret && associative == c.associative;
+        }
+        
+        return ret;
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
     }
 }

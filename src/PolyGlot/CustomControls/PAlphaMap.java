@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2016, Draque
+ * Copyright (c) 2016-2020, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
- *  See LICENSE.TXT included with this code to read the full license agreement.
+ * Licensed under: MIT Licence
+ * See LICENSE.TXT included with this code to read the full license agreement.
 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -20,6 +20,9 @@
 package PolyGlot.CustomControls;
 
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * Provides alphabetical ordering map- compatible with multi-unicode character,
@@ -29,8 +32,10 @@ import java.util.HashMap;
  * @param <K>
  * @param <V>
  */
-public class PAlphaMap<K, V> extends HashMap<K, V> {
-    int longestEntry = 0;
+public class PAlphaMap<K, V> {
+    private boolean missingChars = false;
+    private int longestEntry = 0;
+    private final HashMap<K, V> delegate = new HashMap<>();
     
     /**
      *
@@ -38,7 +43,6 @@ public class PAlphaMap<K, V> extends HashMap<K, V> {
      * @param orderVal Order in alphabet of of alpha
      * @return 
      */
-    @Override
     public V put(K key, V orderVal) {
         java.lang.String sKey = (java.lang.String)key;
         int keyLen = sKey.length();
@@ -46,10 +50,62 @@ public class PAlphaMap<K, V> extends HashMap<K, V> {
             longestEntry = keyLen;
         }
         
-        return (V)super.put((K)key, (V)orderVal);
+        return delegate.put(key, orderVal);
     }
     
     public int getLongestEntry() {
         return longestEntry;
+    }
+    
+    public boolean isEmpty() {
+        return delegate.isEmpty();
+    }
+    
+    public boolean containsKey(K key) {
+        return delegate.containsKey(key);
+    }
+    
+    public V get(K key) {
+        return delegate.get(key);
+    }
+    
+    public void clear() {
+        delegate.clear();
+    }
+    
+    public boolean isMissingChars() {
+        return missingChars;
+    }
+    
+    public void setMissingChars(boolean _missingChars) {
+        missingChars = _missingChars;
+    }
+    
+    @Override
+    public boolean equals(Object comp) {
+        boolean ret = false;
+        
+        if (comp instanceof PAlphaMap) {
+            ret = ((PAlphaMap)comp).getLongestEntry() == longestEntry
+                    && ((PAlphaMap)comp).getDelegate().equals(delegate);
+        }
+        
+        return ret;
+    }
+
+    public Map<K, V> getDelegate() {
+        return delegate;
+    }
+    
+    @Override
+    public int hashCode() {
+        int hash = 5;
+        hash = 59 * hash + this.longestEntry;
+        hash = 59 * hash + Objects.hashCode(this.delegate);
+        return hash;
+    }
+    
+    public Set<K> keySet() {
+        return delegate.keySet();
     }
 }

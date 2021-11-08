@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2017-2018, Draque Thompson
+* Copyright (c) 2014-2021, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
- *  See LICENSE.TXT included with this code to read the full license agreement.
+ * Licensed under: MIT Licence
+ * See LICENSE.TXT included with this code to read the full license agreement.
 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -23,24 +23,9 @@ package PolyGlot.Nodes;
  * This node represents an external etymological parent
  * @author DThompson
  */
-public class EtyExternalParent extends DictNode {
+public class EtyExternalParent extends ConWord {
     
     private String externalLanguage = "";
-    private String definition = "";
-
-    /**
-     * @return the externalWord
-     */
-    public String getExternalWord() {
-        return value;
-    }
-
-    /**
-     * @param externalWord the externalWord to set
-     */
-    public void setExternalWord(String externalWord) {
-        this.value = externalWord;
-    }
 
     /**
      * @return the externalLanguage
@@ -50,10 +35,10 @@ public class EtyExternalParent extends DictNode {
     }
 
     /**
-     * @param externalLanguage the externalLanguage to set
+     * @param _externalLanguage the externalLanguage to set
      */
-    public void setExternalLanguage(String externalLanguage) {
-        this.externalLanguage = externalLanguage;
+    public void setExternalLanguage(String _externalLanguage) {
+        this.externalLanguage = _externalLanguage;
     }
     
     public String getUniqueId() {
@@ -62,35 +47,43 @@ public class EtyExternalParent extends DictNode {
     
     @Override
     public String toString() {
-        return value + (externalLanguage.length() == 0 ? "" 
+        return value + (externalLanguage.isEmpty() ? ""
                 : " (" + externalLanguage + ")");
-    }
-
-    /**
-     * @return the definition
-     */
-    public String getDefinition() {
-        return definition;
-    }
-
-    /**
-     * @param definition the definition to set
-     */
-    public void setDefinition(String definition) {
-        this.definition = definition;
     }
 
     @Override
     public void setEqual(DictNode _node) throws ClassCastException {
         if (_node instanceof EtyExternalParent) {
             EtyExternalParent node = (EtyExternalParent)_node;
-            definition = node.getDefinition();
-            externalLanguage = node.getExternalLanguage();
+            definition = node.definition;
+            externalLanguage = node.externalLanguage;
+            value = node.value;
         } else if (_node != null) {
             throw new ClassCastException("Type: " 
                     + _node.getClass().getCanonicalName() 
                     + " cannot be explicitly converted to " 
                     + getClass().getCanonicalName() + ".");
         }
+    }
+    
+    @Override
+    public boolean equals(Object comp) {
+        boolean ret = false;
+        
+        if (this == comp) {
+            ret = true;
+        } else if (comp != null && getClass() == comp.getClass()) {
+            EtyExternalParent c = (EtyExternalParent)comp;
+            ret = value.equals(c.value);
+            ret = ret && externalLanguage.equals(c.externalLanguage);
+            ret = ret && definition.equals(c.definition);
+        }
+        
+        return ret;
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
     }
 }

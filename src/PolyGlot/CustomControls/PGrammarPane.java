@@ -79,7 +79,7 @@ public class PGrammarPane extends JTextPane {
         MutableAttributeSet inputAttributes = getInputAttributes();
         inputAttributes.removeAttributes(inputAttributes);
         StyleConstants.setIcon(inputAttributes, new ImageIcon(image.getImagePath()));
-        inputAttributes.addAttribute(PGTUtil.ImageIdAttribute, image.getId());
+        inputAttributes.addAttribute(PGTUtil.IMAGE_ID_ATTRIBUTE, image.getId());
         replaceSelection(" ", false);
         inputAttributes.removeAttributes(inputAttributes);
     }
@@ -89,38 +89,39 @@ public class PGrammarPane extends JTextPane {
      */
     @Override
     public void paste() {
-        // might handle more types in the future
-        try {
-            if (ClipboardHandler.isClipboardImage()) {
-                Object imageObject = ClipboardHandler.getClipboardImage();
-                BufferedImage image;
-                if (imageObject instanceof BufferedImage) {
-                    image = (BufferedImage) imageObject;
-                } else if (imageObject instanceof Image) {
-                    Image imageImage = (Image) imageObject;
-                    image = new BufferedImage(imageImage.getWidth(null),
-                            imageImage.getHeight(null), BufferedImage.TYPE_INT_ARGB);
-
-                    // Draw the image on to the buffered image
-                    Graphics2D bGr = image.createGraphics();
-                    bGr.drawImage(imageImage, 0, 0, null);
-                    bGr.dispose();
-                } else {
-                    throw new Exception("Unrecognized image format.");
-                }
-                ImageNode imageNode = core.getImageCollection().getFromBufferedImage(image);
-                addImage(imageNode);
-            } else if (ClipboardHandler.isClipboardString()) {
-                // sanitize contents to plain text
-                ClipboardHandler board = new ClipboardHandler();
-                board.setClipboardContents(board.getClipboardText());
-                super.paste();
-            } else {
-                super.paste();
-            }
-        } catch (Exception e) {
-            System.out.println("WARNING: PGrammarPane Paste Failed");
-        }
+//        // might handle more types in the future
+//        try {
+//            if (ClipboardHandler.isClipboardImage()) {
+//                Object imageObject = ClipboardHandler.getClipboardImage();
+//                BufferedImage image;
+//                if (imageObject instanceof BufferedImage) {
+//                    image = (BufferedImage) imageObject;
+//                } else if (imageObject instanceof Image) {
+//                    Image imageImage = (Image) imageObject;
+//                    image = new BufferedImage(imageImage.getWidth(null),
+//                            imageImage.getHeight(null), BufferedImage.TYPE_INT_ARGB);
+//
+//                    // Draw the image on to the buffered image
+//                    Graphics2D bGr = image.createGraphics();
+//                    bGr.drawImage(imageImage, 0, 0, null);
+//                    bGr.dispose();
+//                } else {
+//                    throw new Exception("Unrecognized image format.");
+//                }
+//                ImageNode imageNode = core.getImageCollection().getFromBufferedImage(image);
+//                addImage(imageNode);
+//            } else if (ClipboardHandler.isClipboardString()) {
+//                // sanitize contents to plain text
+//                ClipboardHandler board = new ClipboardHandler();
+//                board.setClipboardContents(board.getClipboardText());
+//                super.paste();
+//            } else {
+//                super.paste();
+//            }
+//        } catch (Exception e) {
+//            System.out.println("WARNING: PGrammarPane Paste Failed");
+//        }
+        // DUMMY
     }
 
     private void replaceSelection(String content, boolean checkEditable) throws BadLocationException {

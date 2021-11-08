@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2016, Draque
+ * Copyright (c) 2016-2020, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
- *  See LICENSE.TXT included with this code to read the full license agreement.
+ * Licensed under: MIT Licence
+ * See LICENSE.TXT included with this code to read the full license agreement.
 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -39,17 +39,36 @@ public class WordClassValue extends DictNode {
     }
     
      public void writeXML(Document doc, Element rootElement) {
-         Element valueNode = doc.createElement(PGTUtil.ClassValueNodeXID);
+         Element valueNode = doc.createElement(PGTUtil.CLASS_VALUES_NODE_XID);
 
-        Element valueElement = doc.createElement(PGTUtil.ClassValueIdXID);
+        Element valueElement = doc.createElement(PGTUtil.CLASS_VALUE_ID_XID);
         valueElement.appendChild(doc.createTextNode(this.getId().toString()));
         valueNode.appendChild(valueElement);
 
         // value string
-        valueElement = doc.createElement(PGTUtil.ClassValueNameXID);
+        valueElement = doc.createElement(PGTUtil.CLASS_VALUE_NAME_XID);
         valueElement.appendChild(doc.createTextNode(this.getValue()));
         valueNode.appendChild(valueElement);
 
         rootElement.appendChild(valueNode);
      }
+     
+     @Override
+    public boolean equals(Object comp) {
+        boolean ret = false;
+        
+        if (this == comp) {
+            ret = true;
+        } else if (comp != null && getClass() == comp.getClass()) {
+            WordClassValue c = (WordClassValue)comp;
+            ret = value.equals(c.value);
+        }
+        
+        return ret;
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
 }

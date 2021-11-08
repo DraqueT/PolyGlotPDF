@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2014-2015, Draque Thompson, draquemail@gmail.com
+ * Copyright (c) 2014-2020, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
+ * Licensed under: MIT Licence
  * See LICENSE.TXT included with this code to read the full license agreement.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -31,6 +31,19 @@ import org.w3c.dom.Element;
 public class PronunciationNode extends DictNode {
     private String pronunciation = "";
     
+    public PronunciationNode() {
+    }
+    
+    /**
+     * 
+     * @param pattern The pattern (regex compatible) to search for/transform
+     * @param _pronunciation The pronunciation to transform the pattern encountered to
+     */
+    public PronunciationNode(String pattern, String _pronunciation) {
+        value = pattern;
+        pronunciation = _pronunciation;
+    }
+    
     public String getPronunciation() {
         return pronunciation;
     }
@@ -39,11 +52,6 @@ public class PronunciationNode extends DictNode {
         pronunciation = _pronunciation;
     }
 
-    public boolean equals(PronunciationNode test) {
-        return (pronunciation.equals(test.getPronunciation())
-                && value.equals(test.getValue()));
-    }
-    
     @Override
     public void setEqual(DictNode _node) throws ClassCastException {
         if (!(_node instanceof PronunciationNode)) {
@@ -52,22 +60,42 @@ public class PronunciationNode extends DictNode {
         
         PronunciationNode node = (PronunciationNode) _node;
         
-        this.setPronunciation(node.getPronunciation());
+        this.pronunciation = node.pronunciation;
         this.setValue(node.getValue());
         this.setId(node.getId());
     }
     
     public void writeXML(Document doc, Element rootElement) {
-        Element wordNode = doc.createElement(PGTUtil.proGuideXID);
+        Element wordNode = doc.createElement(PGTUtil.PRO_GUIDE_XID);
 
-        Element wordValue = doc.createElement(PGTUtil.proGuideBaseXID);
+        Element wordValue = doc.createElement(PGTUtil.PRO_GUIDE_BASE_XID);
         wordValue.appendChild(doc.createTextNode(this.getValue()));
         wordNode.appendChild(wordValue);
 
-        wordValue = doc.createElement(PGTUtil.proGuidePhonXID);
-        wordValue.appendChild(doc.createTextNode(this.getPronunciation()));
+        wordValue = doc.createElement(PGTUtil.PRO_GUIDE_PHON_XID);
+        wordValue.appendChild(doc.createTextNode(this.pronunciation));
         wordNode.appendChild(wordValue);
         
         rootElement.appendChild(wordNode);
+    }
+    
+    @Override
+    public boolean equals(Object comp) {
+        boolean ret = false;
+        
+        if (this == comp) {
+            ret = true;
+        } else if (comp != null && getClass() == comp.getClass()) {
+            PronunciationNode c = (PronunciationNode)comp;
+            ret = value.equals(c.value);
+            ret = ret && pronunciation.equals(c.pronunciation);
+        }
+        
+        return ret;
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
     }
 }

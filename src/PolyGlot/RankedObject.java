@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2014-2015, Draque Thompson, draquemail@gmail.com
+ * Copyright (c) 2014-2019, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
+ * Licensed under: MIT Licence
  * See LICENSE.TXT included with this code to read the full license agreement.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -21,17 +21,17 @@
 package PolyGlot;
 
 /**
- * Used to rank any given object by numeric value. WHY ISN'T THIS IN JAVA 
- * BY DEFAULT???
+ * Used to rank any given object by numeric value.
  * @author draque
+ * @param <N>
  */
-public class RankedObject implements Comparable<RankedObject>{
+public class RankedObject<N> implements Comparable<RankedObject>{
     private final int rank;
     private int LOWER = -1;
     private int HIGHER = 1;
-    Object holder;
+    private final N holder;
     
-    public RankedObject(Object _holder, int _rank) {
+    public RankedObject(N _holder, int _rank) {
         holder = _holder;        
         rank = _rank;
     }
@@ -40,7 +40,7 @@ public class RankedObject implements Comparable<RankedObject>{
         return rank;
     }
     
-    public Object getHolder() {
+    public N getHolder() {
         return holder;
     }
     
@@ -57,7 +57,7 @@ public class RankedObject implements Comparable<RankedObject>{
     // does not handle equal values. Returning 0 would merge, and this is undesirable.
     @Override
     public int compareTo(RankedObject _compare) {        
-        if (_compare.getRank() > this.getRank()) {
+        if (_compare.rank > this.rank) {
             return LOWER;
         }
         else {

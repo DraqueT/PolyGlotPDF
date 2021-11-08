@@ -157,20 +157,21 @@ public class GrammarChapNode extends DefaultMutableTreeNode {
     }
     
     public void writeXML(Document doc, Element rootElement) {
-        Element chapNode = doc.createElement(PGTUtil.grammarChapterNodeXID);
-            rootElement.appendChild(chapNode);
-
-            Element chapElement = doc.createElement(PGTUtil.grammarChapterNameXID);
-            chapElement.appendChild(doc.createTextNode(this.getName()));
-            chapNode.appendChild(chapElement);
-            
-            chapElement = doc.createElement(PGTUtil.grammarSectionsListXID);
-            
-            for (int i = 0; i < this.getChildCount(); i++) {
-                GrammarSectionNode curSec = (GrammarSectionNode)this.getChildAt(i);                
-                curSec.writeXML(doc, chapElement);
-            }
-            
-            chapNode.appendChild(chapElement);
+//        Element chapNode = doc.createElement(PGTUtil.grammarChapterNodeXID);
+//            rootElement.appendChild(chapNode);
+//
+//            Element chapElement = doc.createElement(PGTUtil.grammarChapterNameXID);
+//            chapElement.appendChild(doc.createTextNode(this.getName()));
+//            chapNode.appendChild(chapElement);
+//            
+//            chapElement = doc.createElement(PGTUtil.grammarSectionsListXID);
+//            
+//            for (int i = 0; i < this.getChildCount(); i++) {
+//                GrammarSectionNode curSec = (GrammarSectionNode)this.getChildAt(i);                
+//                curSec.writeXML(doc, chapElement);
+//            }
+//            
+//            chapNode.appendChild(chapElement);
+        rootElement.appendChild(doc.createElement("DUMMY"));
     }
 }

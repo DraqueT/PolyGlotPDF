@@ -84,20 +84,21 @@ public class GrammarSectionNode extends DefaultMutableTreeNode {
     }
     
     public void writeXML(Document doc, Element rootElement) {
-        Element secNode = doc.createElement(PGTUtil.grammarSectionNodeXID);
-                
-        Element secElement = doc.createElement(PGTUtil.grammarSectionNameXID);
-        secElement.appendChild(doc.createTextNode(this.getName()));
-        secNode.appendChild(secElement);
-
-        secElement = doc.createElement(PGTUtil.grammarSectionRecordingXID);
-        secElement.appendChild(doc.createTextNode(this.getRecordingId().toString()));
-        secNode.appendChild(secElement);
-
-        secElement = doc.createElement(PGTUtil.grammarSectionTextXID);
-        secElement.appendChild(doc.createTextNode(this.getSectionText()));
-        secNode.appendChild(secElement);
-
-        rootElement.appendChild(secNode);
+//        Element secNode = doc.createElement(PGTUtil.grammarSectionNodeXID);
+//                
+//        Element secElement = doc.createElement(PGTUtil.grammarSectionNameXID);
+//        secElement.appendChild(doc.createTextNode(this.getName()));
+//        secNode.appendChild(secElement);
+//
+//        secElement = doc.createElement(PGTUtil.grammarSectionRecordingXID);
+//        secElement.appendChild(doc.createTextNode(this.getRecordingId().toString()));
+//        secNode.appendChild(secElement);
+//
+//        secElement = doc.createElement(PGTUtil.grammarSectionTextXID);
+//        secElement.appendChild(doc.createTextNode(this.getSectionText()));
+//        secNode.appendChild(secElement);
+//
+//        rootElement.appendChild(secNode);
+        rootElement.appendChild(doc.createElement("DUMMY"));
     }
 }

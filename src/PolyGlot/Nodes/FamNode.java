@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2014-2015, Draque Thompson, draquemail@gmail.com
+ * Copyright (c) 2014-2020, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
- *  See LICENSE.TXT included with this code to read the full license agreement.
+ * Licensed under: MIT Licence
+ * See LICENSE.TXT included with this code to read the full license agreement.
 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -32,10 +32,10 @@ import java.util.List;
 public class FamNode extends DictNode {
     private final List<FamNode> subNodes = new ArrayList<>();
     private final List<ConWord> words = new ArrayList<>();
-    final private FamNode parent;
+    private final FamNode parentNode;
     private String notes = "";
     private final FamilyManager manager;
-
+    
     /**
      * sets notes
      * @param _notes new notes
@@ -48,8 +48,8 @@ public class FamNode extends DictNode {
      * Gets node's parent
      * @return FamNode representing node's parent. null if root
      */
-    public FamNode getParent() {
-        return parent;
+    public FamNode getParentNode() {
+        return parentNode;
     }
     
     /**
@@ -66,7 +66,7 @@ public class FamNode extends DictNode {
      * @param _manager a link to the parent manager
      */    
     public FamNode(FamNode _parent, FamilyManager _manager) {
-        parent = _parent;
+        parentNode = _parent;
         manager = _manager;
     }
     
@@ -77,7 +77,7 @@ public class FamNode extends DictNode {
      * @param _manager A link to the parent manager
      */
     public FamNode(FamNode _parent, String _value, FamilyManager _manager) {
-        parent = _parent;
+        parentNode = _parent;
         this.setValue(_value);
         manager = _manager;
     }
@@ -126,33 +126,24 @@ public class FamNode extends DictNode {
      * gets all words in immediate family
      * @return iterator of all words in immediate family
      */
-    public Iterator<ConWord> getWords() {
-        List<ConWord> ret = new ArrayList<>();
+    public ConWord[] getWords() {
         manager.removeDeadWords(this, words);
-        
-        
-        Iterator<ConWord> convert = words.iterator();
-        
-        while (convert.hasNext()) {
-            ConWord curWord = convert.next();
-            
-            ret.add(curWord);
-        }
-        
+
+        List<ConWord> ret = new ArrayList<>(words);
         Collections.sort(ret);
         
-        return ret.iterator();
+        return ret.toArray(new ConWord[0]);
     }
     
     /**
      * returns all words within family and subfamilies
      * @return sorted list of ConWords
      */
-    public List<ConWord> getWordsIncludeSubs() {
+    public ConWord[] getWordsIncludeSubs() {
         List<ConWord> ret = getWordsIncludeSubsInternal();
         Collections.sort(ret);
         
-        return ret;
+        return ret.toArray(new ConWord[0]);
     }
     
     /**
@@ -189,10 +180,10 @@ public class FamNode extends DictNode {
      * gets all subnodes
      * @return alphabetically sorted iterator of all subnodes
      */
-    public List<FamNode> getNodes() {
+    public FamNode[] getNodes() {
         Collections.sort(subNodes);
         
-        return subNodes;
+        return subNodes.toArray(new FamNode[0]);
     }
     
     public void addNode(FamNode _node) {
@@ -204,11 +195,11 @@ public class FamNode extends DictNode {
      * @return false if root
      */
     public boolean removeFromParent() {
-        if (parent == null) {
+        if (parentNode == null) {
             return false;
         }
         
-        parent.removeChild(this);
+        parentNode.removeChild(this);
         
         return true;
     }
@@ -219,5 +210,28 @@ public class FamNode extends DictNode {
      */
     public void removeChild(FamNode _child) {
         subNodes.remove(_child);
+    }
+    
+    @Override
+    public boolean equals(Object comp) {
+        boolean ret = false;
+        
+        if (this == comp) {
+            ret = true;
+        } else if (comp != null && getClass() == comp.getClass()) {
+            FamNode c = (FamNode)comp;
+            
+            ret = value.equals(c.value);
+            ret = ret && subNodes.equals(c.subNodes);
+            ret = ret && words.equals(c.words);
+            ret = ret && notes.equals(c.notes);
+        }
+        
+        return ret;
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
     }
 }

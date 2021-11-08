@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2014-2019, Draque Thompson, draquemail@gmail.com
+ * Copyright (c) 2014-2021, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
+ * Licensed under: MIT Licence
  * See LICENSE.TXT included with this code to read the full license agreement.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -22,19 +22,22 @@ package PolyGlot.ManagersCollections;
 import PolyGlot.CustomControls.PAlphaMap;
 import PolyGlot.DictCore;
 import PolyGlot.IOHandler;
-import PolyGlot.PFontHandler;
 import PolyGlot.PGTUtil;
-import java.awt.Font;
-import java.awt.FontFormatException;
-import java.awt.font.TextAttribute;
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import javax.swing.JLabel;
+import java.util.Objects;
+import PolyGlot.Nodes.ConWord;
+import PolyGlot.PFontHandler;
+import PolyGlot.WebInterface;
+import java.awt.Font;
+import java.awt.FontFormatException;
+import java.awt.font.TextAttribute;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -43,11 +46,9 @@ import org.w3c.dom.Element;
  * @author draque
  */
 public class PropertiesManager {
-    private String overrideProgramPath = "";
-    private Font conFont = null;
-    private Integer conFontStyle = 0;
-    private double conFontSize = 12;
-    private double localFontSize = 12;
+    protected Integer conFontStyle;
+    protected double conFontSize = 12;
+    protected double localFontSize = 12;
     private final PAlphaMap<String, Integer> alphaOrder;
     private String alphaPlainText = "";
     private String langName = "";
@@ -59,23 +60,285 @@ public class PropertiesManager {
     private boolean localUniqueness = false;
     private boolean overrideRegexFont = false;
     private boolean ignoreCase = false;
-    private boolean enableRomanization = false;
     private boolean disableProcRegex = false;
     private boolean enforceRTL = false;
     private boolean useLocalWordLex = false;
-    private byte[] cachedConFont = null;
-    private byte[] cachedLocalFont = null;
-    private final Font charisUnicode;
-    private Font localFont;
+    protected byte[] cachedConFont = null;
+    protected byte[] cachedLocalFont = null;
     private final Map<String, String> charRep = new HashMap<>();
-    private final DictCore core;
-    private Double kerningSpace = 0.0;
-
-    public PropertiesManager(DictCore _core) throws IOException {
+    protected DictCore core;
+    protected Double kerningSpace = 0.0;
+    private boolean useSimplifiedConjugations = false;
+    private Font conFont = null;
+    private Font localFont = PGTUtil.CHARIS_UNICODE;
+    
+    public PropertiesManager() {
         alphaOrder = new PAlphaMap<>();
-        core = _core;
-        charisUnicode = new JLabel().getFont();
-    }   
+        this.conFontStyle = Font.PLAIN;
+    }
+    
+    public void setDictCore(DictCore _core) {
+        this.core = _core;
+    }
+    
+    /**
+     * Gets unicode charis font. Defaults/hard coded to size 12
+     * 
+     * @return
+     */
+    public Font getFontMenu() {
+        return PGTUtil.CHARIS_UNICODE.deriveFont(Font.PLAIN, (float)core.getOptionsManager().getMenuFontSize());
+    }
+    
+    public Font getFontLocal() {
+        return getFontLocal(localFontSize);
+    }
+    
+    public Font getFontLocal(double size) {
+        return localFont.deriveFont(localFont.getStyle(), (float)size);
+    }
+    
+    public void setLocalFont(Font _localFont) {
+        setLocalFont(_localFont, localFontSize);
+    }
+    
+    public void setLocalFont(Font _localFont, double size) {
+        // null cached font if being set to new font
+        if (localFont != null && !localFont.getFamily().equals(_localFont.getFamily())) {
+            cachedLocalFont = null;
+        }
+        
+        localFont = _localFont; 
+        localFontSize = size;
+    }
+    
+    public void setLocalFontSize(double size) {
+        localFontSize = size;
+    }
+    
+    public double getLocalFontSize() {
+        return localFontSize;
+    }
+    
+    public void setFontFromFile(String fontPath) throws IOException, FontFormatException {
+        setFontCon(PFontHandler.getFontFromFile(fontPath)
+                .deriveFont(conFontStyle, (float)conFontSize), conFontStyle, (float)conFontSize);
+        cachedConFont = IOHandler.getFileByteArray(fontPath);
+    }
+    
+    public void setLocalFontFromFile(String fontPath) throws IOException, FontFormatException {
+        Font font = PFontHandler.getFontFromFile(fontPath)
+                .deriveFont((float)localFontSize);
+        setLocalFont(font);
+        cachedLocalFont = IOHandler.getFileByteArray(fontPath);
+    }
+
+    /**
+     * Synchronizes cached font with confont set. 
+     * @return true on success, false if no matching font found
+     * @throws java.lang.Exception on read error
+     */
+    public boolean syncCachedFontCon() throws Exception {
+        File fontFile = PFontHandler.getFontFile(conFont);
+        cachedConFont = null;
+        if (fontFile.getName().toLowerCase().endsWith("ttc")) {
+            throw new Exception("PolyGlot does not currently support ttc (true type collection) caching or ligatures.");
+        } else if (fontFile.exists()) {
+            // set cached version
+            cachedConFont = IOHandler.getByteArrayFromFile(fontFile);
+            
+            // load font from binary location (superior due to ligature support from binaries)
+            conFont = PFontHandler.getFontFromFile(fontFile.getCanonicalPath());
+        }
+        
+        return cachedConFont != null;
+    }
+    
+    /**
+     * Sets font. Cached font byte array will be cleared.
+     * 
+     * Will first try to re-load the font from OS font repository folder (due to ligature error in Java)
+     *
+     * @param _fontCon The font being set
+     * @param _fontStyle The style of the font (bold, underlined, etc.)
+     * @param _fontSize Size of font
+     */
+    public void setFontCon(Font _fontCon, Integer _fontStyle, double _fontSize) {
+        setFontConRaw(_fontCon);
+        setFontSize(_fontSize);
+        setFontStyle(_fontStyle);
+    }
+    
+    /**
+     * Tries to load font from OS file, defaults to pulling from Font if unable
+     * (pulling from Font disables ligatures)
+     * @param _fontFamily 
+     * @throws java.lang.Exception if unable to load font 
+     */
+    public void setFontCon(String _fontFamily) throws Exception {
+        try {
+            Font newFont = Font.getFont(_fontFamily);
+            setFontConRaw(newFont);
+        } catch (Exception e) {
+            throw new Exception ("Unable to find or set font: " + _fontFamily + " due to: \n", e);
+        }
+    }
+    
+    /**
+     * Gets language's font
+     *
+     * @return the fontCon
+     */
+    public Font getFontCon() {
+        // create copy so that initial font properties (such as kerning) is never lost
+        Font retFont = conFont == null ? null : conFont.deriveFont((float)0.0);
+        
+        // under certain circumstances, this can default to 0...
+        if (conFontSize == 0) {
+            conFontSize = 12;
+        }
+
+        if (retFont != null && kerningSpace != 0.0) {
+            retFont = PGTUtil.addFontAttribute(TextAttribute.TRACKING, kerningSpace, conFont);
+        }
+        
+        return retFont == null ? 
+                PGTUtil.CHARIS_UNICODE.deriveFont((float)core.getOptionsManager().getMenuFontSize()) : 
+                retFont.deriveFont(conFontStyle, (float)conFontSize);
+    }
+
+    /**
+     * Sets conlang font and nulls cached font value.
+     * This is to be used only by the CustHandlerFactory and internally, as it sets the font as its raw
+     * value rather than by first searching for an appropriate file beforehand.
+     *
+     * @param fontCon the fontCon to set
+     */
+    public void setFontConRaw(Font fontCon) {
+        // null cached font if being set to new font
+        if (conFont != null && !conFont.getFamily().equals(fontCon.getFamily())) {
+            cachedConFont = null;
+        }
+
+        conFont = fontCon == null ? PGTUtil.CHARIS_UNICODE : fontCon;
+    }
+    
+    /**
+     * @param _fontStyle the fontStyle to set
+     */
+    public void setFontStyle(Integer _fontStyle) {
+        conFontStyle = _fontStyle;
+        conFont = conFont.deriveFont(conFontStyle, (float)conFontSize);
+    }
+    
+    /**
+     * Cannot be set to 0 or lower. Will default to 12 if set to 0 or lower.
+     *
+     * @param _fontSize the fontSize to set
+     */
+    public void setFontSize(double _fontSize) {
+        conFontSize = _fontSize < 0 ? 12 : _fontSize;
+        conFont = conFont.deriveFont(conFontStyle, (float)conFontSize);
+    }
+    
+    /**
+     * 
+     * @return font con family
+     */
+    public String getFontConFamily() {
+        Font curFont = getFontCon();
+        return curFont == null ? "" : curFont.getFamily();
+    }
+    
+    /**
+     * 
+     * @return font local family
+     */
+    public String getFontLocalFamily() {
+        Font curFont = getFontLocal();
+        return curFont == null ? "" : curFont.getFamily();
+    }
+
+    /**
+     * Tests whether system has given font installed
+     *
+     * @param testFont Font to test system for
+     * @return true if system has font, false otherwise
+     */
+    public static boolean testSystemHasFont(Font testFont) {
+        boolean ret = false;
+        String[] fontNames = java.awt.GraphicsEnvironment
+                .getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
+
+        if (Arrays.asList(fontNames).contains(testFont.getName())) {
+            ret = true;
+        }
+
+        return ret;
+    }
+    
+    /**
+     * Refreshes all fonts in PolyGlot, ensuring that the most recent versions
+     * of given fonts installed on the system are used.
+     * @throws java.lang.Exception
+     */
+    public void refreshFonts() throws Exception {
+        try {
+            File updatedConFont = null;
+            File updatedLocalFont = null;
+            
+            if (conFont != null) {
+                updatedConFont = PFontHandler.getFontFile(conFont);
+            }
+            
+            if (localFont != null) {
+                updatedLocalFont = PFontHandler.getFontFile(localFont);
+            }
+        
+            if (updatedConFont != null) {
+                conFont = PFontHandler.getFontFromFile(updatedConFont.getAbsolutePath());
+                conFont = conFont.deriveFont(conFontStyle, (float)conFontSize);
+                cachedConFont = IOHandler.getByteArrayFromFile(updatedConFont);
+            }
+            
+            if (updatedLocalFont != null) {
+                localFont = PFontHandler.getFontFromFile(updatedLocalFont.getAbsolutePath());
+                localFont = localFont.deriveFont((float)localFontSize);
+                cachedLocalFont = IOHandler.getByteArrayFromFile(updatedLocalFont);
+            }
+        } catch (Exception e) {
+            //core.getOSHandler().getIOHandler().writeErrorLog(e);
+            throw new Exception("Unable to refresh fonts: " + e.getLocalizedMessage());
+        }
+    }
+    
+    @Override
+    public boolean equals(Object comp) {
+        boolean ret = false;
+        
+        if (this == comp) {
+            ret = true;
+        } else if (comp instanceof PropertiesManager) {
+            PropertiesManager prop = (PropertiesManager) comp;
+            ret = ((conFont == null) && (prop.conFont == null)) || conFont.equals(prop.conFont);
+            ret = ret && conFontStyle.equals(prop.conFontStyle);
+            ret = ret && conFontSize == prop.conFontSize;
+            ret = ret && localFontSize == prop.localFontSize;
+            ret = ret && localFont.equals(prop.localFont);
+            ret = ret && kerningSpace.equals(prop.kerningSpace);
+            ret = ret && super.equals(comp);
+        }
+        
+        return ret;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 53 * hash + Objects.hashCode(this.conFont);
+        hash = 53 * hash + Objects.hashCode(this.localFont);
+        return hash;
+    }
     
     /**
      * Gets replacement string for given character. Returns blank otherwise.
@@ -114,9 +377,7 @@ public class PropertiesManager {
      * @param character character for replacement values to be wiped for
      */
     public void delCharacterReplacement(String character) {
-        if (charRep.containsKey(character)) {
-            charRep.remove(character);
-        }
+        charRep.remove(character);
     }
     
     /**
@@ -130,66 +391,12 @@ public class PropertiesManager {
      * Gets all character replacement pairs
      * @return iterator of map entries with two strings apiece
      */
-    public ArrayList<Entry<String, String>> getAllCharReplacements() {
+    public Iterable<Entry<String, String>> getAllCharReplacements() {
         return new ArrayList<>(charRep.entrySet());
     }
 
     public void AddEmptyRep() {
         charRep.put("", "");
-    }
-    
-    /**
-     * Gets unicode charis font. Defaults/hard coded to size 12
-     *
-     * @return
-     */
-    public Font getFontMenu() {
-        return charisUnicode.deriveFont(0, (float)core.getOptionsManager().getMenuFontSize());
-    }
-    
-    public Font getFontLocal() {
-        return getFontLocal(localFontSize);
-    }
-    
-    public Font getFontLocal(double size) {
-        if (localFont == null) {
-            localFont = new JLabel().getFont();
-        }
-        return localFont.deriveFont(0, (float)size);
-    }
-    
-    public void setLocalFont(Font _localFont) {
-        setLocalFont(_localFont, localFontSize);
-    }
-    
-    public void setLocalFont(Font _localFont, double size) {
-        // null cached font if being set to new font
-        if (localFont != null && !localFont.getFamily().equals(_localFont.getFamily())) {
-            cachedLocalFont = null;
-        }
-        
-        localFont = _localFont; 
-        localFontSize = size;
-    }
-    
-    public void setLocalFontSize(double size) {
-        localFontSize = size;
-    }
-    
-    /**
-     * Gets PolyGlot's cannonical directory, regardless of what the OS returns
-     * @return working directory
-     */
-    public File getCannonicalDirectory() {
-        File ret;
-        
-        if (overrideProgramPath.length() == 0) {
-            ret = IOHandler.getBaseProgramPath();
-        } else {
-            ret = new File(overrideProgramPath);
-        }
-        
-        return ret;
     }
 
     /**
@@ -216,24 +423,6 @@ public class PropertiesManager {
 
     public byte[] getCachedLocalFont() {
         return cachedLocalFont;
-    }
-    
-    public void setFontFromFile(String fontPath) throws IOException, FontFormatException {
-        cachedConFont = IOHandler.getFileByteArray(fontPath);
-        
-        setFontCon(PFontHandler.getFontFromFile(fontPath).deriveFont(conFontStyle, (float)conFontSize), conFontStyle, (float)conFontSize);
-    }
-
-    public void setOverrideProgramPath(String override) {
-        if (override.equals(PGTUtil.emptyFile)) {
-            overrideProgramPath = "";
-        } else {
-            overrideProgramPath = override;
-        }
-    }
-
-    public String getOverrideProgramPath() {
-        return overrideProgramPath;
     }
 
     public void setDisableProcRegex(boolean _disableProcRegex) {
@@ -271,90 +460,6 @@ public class PropertiesManager {
     }
 
     /**
-     * Sets font.
-     * 
-     * Will first try to re-load the font from OS font repository folder (due to ligature error in Java)
-     *
-     * @param _fontCon The font being set
-     * @param _fontStyle The style of the font (bold, underlined, etc.)
-     * @param _fontSize Size of font
-     */
-    public void setFontCon(Font _fontCon, Integer _fontStyle, double _fontSize) {
-        Font switchToFont = PFontHandler.loadFontFromOSFileFolder(_fontCon);
-        
-        if (switchToFont == null) {
-            switchToFont = _fontCon;
-        }
-        
-        setFontConRaw(switchToFont);
-        setFontSize(_fontSize);
-        setFontStyle(_fontStyle);
-    }
-    
-    /**
-     * Tries to load font from OS file, defaults to pulling from Font if unable
-     * (pulling from Font disables ligatures)
-     * @param _fontFamily 
-     * @throws java.lang.Exception if unable to load font 
-     */
-    public void setFontCon(String _fontFamily) throws Exception {
-        try {
-            Font newFont = PFontHandler.loadFontFromOSFileFolder(Font.getFont(_fontFamily));
-
-            if (newFont == null) {
-                newFont = Font.getFont(_fontFamily);
-            } 
-
-            setFontConRaw(newFont);
-        } catch (Exception e) {
-            throw new Exception ("Unable to find or set font: " + _fontFamily + " due to: \n");
-        }
-    }
-
-    public void setFontCon(Font _font) {
-        setFontCon(_font, getFontStyle(), getFontSize());
-    }
-    
-    /**
-     * Gets language's font
-     *
-     * @return the fontCon
-     */
-    public Font getFontCon() {
-        // create copy so that initial font properties (such as kerning) is never lost
-        Font retFont = conFont == null ? null : conFont.deriveFont((float)0.0);
-        
-        // under certain circumstances, this can default to 0...
-        if (conFontSize == 0) {
-            conFontSize = 12;
-        }
-
-        if (retFont != null && kerningSpace != 0.0) {
-            retFont = PGTUtil.addFontAttribute(TextAttribute.TRACKING, kerningSpace, conFont);
-        }
-        
-        return retFont == null ? 
-                charisUnicode.deriveFont((float)core.getOptionsManager().getMenuFontSize()) : 
-                retFont.deriveFont(conFontStyle, (float)conFontSize);
-    }
-
-    /**
-     * Sets conlang font and nulls cached font value.
-     * This is to be used only by the CustHandlerFactory and internally, as it sets the font as its raw
-     * value rather than by first searching for an appropriate file beforehand.
-     *
-     * @param fontCon the fontCon to set
-     */
-    public void setFontConRaw(Font fontCon) {
-        // null cached font if being set to new font
-        if (conFont != null && !conFont.getFamily().equals(fontCon.getFamily())) {
-            cachedConFont = null;
-        }
-
-        conFont = fontCon == null ? charisUnicode : fontCon;
-    }
-
-    /**
      * @return the fontStyle
      */
     public Integer getFontStyle() {
@@ -362,28 +467,10 @@ public class PropertiesManager {
     }
 
     /**
-     * @param _fontStyle the fontStyle to set
-     */
-    public void setFontStyle(Integer _fontStyle) {
-        conFontStyle = _fontStyle;
-        conFont = conFont.deriveFont(conFontStyle, (float)conFontSize);
-    }
-
-    /**
      * @return the fontSize
      */
     public double getFontSize() {
         return conFontSize;
-    }
-
-    /**
-     * Cannot be set to 0 or lower. Will default to 12 if set to 0 or lower.
-     *
-     * @param _fontSize the fontSize to set
-     */
-    public void setFontSize(double _fontSize) {
-            conFontSize = _fontSize < 0 ? 12 : _fontSize;
-            conFont = conFont.deriveFont(conFontStyle, (float)conFontSize);
     }
 
     /**
@@ -459,10 +546,10 @@ public class PropertiesManager {
     }
 
     /**
-     * @param langName the langName to set
+     * @param _langName the langName to set
      */
-    public void setLangName(String langName) {
-        this.langName = langName;
+    public void setLangName(String _langName) {
+        this.langName = _langName;
     }
 
     /**
@@ -473,10 +560,10 @@ public class PropertiesManager {
     }
 
     /**
-     * @param typesMandatory the typesMandatory to set
+     * @param _typesMandatory the typesMandatory to set
      */
-    public void setTypesMandatory(boolean typesMandatory) {
-        this.typesMandatory = typesMandatory;
+    public void setTypesMandatory(boolean _typesMandatory) {
+        this.typesMandatory = _typesMandatory;
     }
 
     /**
@@ -487,10 +574,10 @@ public class PropertiesManager {
     }
 
     /**
-     * @param localMandatory the localMandatory to set
+     * @param _localMandatory the localMandatory to set
      */
-    public void setLocalMandatory(boolean localMandatory) {
-        this.localMandatory = localMandatory;
+    public void setLocalMandatory(boolean _localMandatory) {
+        this.localMandatory = _localMandatory;
     }
 
     /**
@@ -501,10 +588,10 @@ public class PropertiesManager {
     }
 
     /**
-     * @param wordUniqueness the wordUniqueness to set
+     * @param _wordUniqueness the wordUniqueness to set
      */
-    public void setWordUniqueness(boolean wordUniqueness) {
-        this.wordUniqueness = wordUniqueness;
+    public void setWordUniqueness(boolean _wordUniqueness) {
+        this.wordUniqueness = _wordUniqueness;
     }
 
     /**
@@ -515,34 +602,16 @@ public class PropertiesManager {
     }
 
     /**
-     * @param localUniqueness the localUniqueness to set
+     * @param _localUniqueness the localUniqueness to set
      */
-    public void setLocalUniqueness(boolean localUniqueness) {
-        this.localUniqueness = localUniqueness;
+    public void setLocalUniqueness(boolean _localUniqueness) {
+        this.localUniqueness = _localUniqueness;
     }
 
     public String buildPropertiesReportTitle() {
         String ret = "";
 
-        ret += ConWordCollection.formatPlain("Language Name: " + langName + "<br><br>", core);
-
-        return ret;
-    }
-
-    /**
-     * Tests whether system has given font installed
-     *
-     * @param testFont Font to test system for
-     * @return true if system has font, false otherwise
-     */
-    public static boolean testSystemHasFont(Font testFont) {
-        boolean ret = false;
-        String[] fontNames = java.awt.GraphicsEnvironment
-                .getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
-
-        if (Arrays.asList(fontNames).contains(testFont.getName())) {
-            ret = true;
-        }
+        ret += ConWordCollection.formatPlain("Language Name: " + WebInterface.encodeHTML(langName) + "<br><br>", core);
 
         return ret;
     }
@@ -554,112 +623,118 @@ public class PropertiesManager {
      * @param rootElement root element of document
      */
     public void writeXML(Document doc, Element rootElement) {
-        Element propContainer = doc.createElement(PGTUtil.langPropertiesXID);
+        Element propContainer = doc.createElement(PGTUtil.LANG_PROPERTIES_XID);
         Element wordValue;
         
         rootElement.appendChild(propContainer);
 
-        // store font for Conlang words
-        wordValue = doc.createElement(PGTUtil.fontConXID);
-        Font curFont = getFontCon();
-        wordValue.appendChild(doc.createTextNode(curFont == null ? "" : curFont.getFamily()));
-        propContainer.appendChild(wordValue);
+        // store font for Conlang words ONLY if no cached font
+        if (cachedConFont == null) {
+            wordValue = doc.createElement(PGTUtil.FONT_CON_XID);
+            wordValue.appendChild(doc.createTextNode(getFontConFamily()));
+            propContainer.appendChild(wordValue);
+        }
 
         // store font style
-        wordValue = doc.createElement(PGTUtil.langPropFontStyleXID);
-        wordValue.appendChild(doc.createTextNode(getFontStyle().toString()));
+        wordValue = doc.createElement(PGTUtil.LANG_PROP_FONT_STYLE_XID);
+        wordValue.appendChild(doc.createTextNode(conFontStyle.toString()));
         propContainer.appendChild(wordValue);
 
         // store font size
-        wordValue = doc.createElement(PGTUtil.langPropFontSizeXID);
-        wordValue.appendChild(doc.createTextNode(Double.toString(getFontSize())));
+        wordValue = doc.createElement(PGTUtil.LANG_PROP_FONT_SIZE_XID);
+        wordValue.appendChild(doc.createTextNode(Double.toString(conFontSize)));
         propContainer.appendChild(wordValue);
         
         // store font size for local language font
-        wordValue = doc.createElement(PGTUtil.langPropLocalFontSizeXID);
+        wordValue = doc.createElement(PGTUtil.LANG_PROP_LOCAL_FONT_SIZE_XID);
         wordValue.appendChild(doc.createTextNode(Double.toString(localFontSize)));
         propContainer.appendChild(wordValue);
 
         // store name for conlang
-        wordValue = doc.createElement(PGTUtil.langPropLangNameXID);
-        wordValue.appendChild(doc.createTextNode(getLangName()));
+        wordValue = doc.createElement(PGTUtil.LANG_PROP_LANG_NAME_XID);
+        wordValue.appendChild(doc.createTextNode(langName));
         propContainer.appendChild(wordValue);
 
         // store alpha order for conlang
-        wordValue = doc.createElement(PGTUtil.langPropAlphaOrderXID);
-        wordValue.appendChild(doc.createTextNode(getAlphaPlainText()));
+        wordValue = doc.createElement(PGTUtil.LANG_PROP_ALPHA_ORDER_XID);
+        wordValue.appendChild(doc.createTextNode(alphaPlainText));
         propContainer.appendChild(wordValue);
 
         // store option for mandatory Types
-        wordValue = doc.createElement(PGTUtil.langPropTypeMandatoryXID);
-        wordValue.appendChild(doc.createTextNode(isTypesMandatory() ? PGTUtil.True : PGTUtil.False));
+        wordValue = doc.createElement(PGTUtil.LANG_PROP_TYPE_MAND_XID);
+        wordValue.appendChild(doc.createTextNode(typesMandatory ? PGTUtil.TRUE : PGTUtil.FALSE));
         propContainer.appendChild(wordValue);
 
         // store option for mandatory Local word
-        wordValue = doc.createElement(PGTUtil.langPropLocalMandatoryXID);
-        wordValue.appendChild(doc.createTextNode(isLocalMandatory() ? PGTUtil.True : PGTUtil.False));
+        wordValue = doc.createElement(PGTUtil.LANG_PROP_LOCAL_MAND_XID);
+        wordValue.appendChild(doc.createTextNode(localMandatory ? PGTUtil.TRUE : PGTUtil.FALSE));
         propContainer.appendChild(wordValue);
 
         // store option for unique local word
-        wordValue = doc.createElement(PGTUtil.langPropLocalUniquenessXID);
-        wordValue.appendChild(doc.createTextNode(isLocalUniqueness() ? PGTUtil.True : PGTUtil.False));
+        wordValue = doc.createElement(PGTUtil.LANG_PROP_LOCAL_UNIQUE_XID);
+        wordValue.appendChild(doc.createTextNode(localUniqueness ? PGTUtil.TRUE : PGTUtil.FALSE));
         propContainer.appendChild(wordValue);
 
         // store option for unique conwords
-        wordValue = doc.createElement(PGTUtil.langPropWordUniquenessXID);
-        wordValue.appendChild(doc.createTextNode(isWordUniqueness() ? PGTUtil.True : PGTUtil.False));
+        wordValue = doc.createElement(PGTUtil.LANG_PROP_WORD_UNIQUE_XID);
+        wordValue.appendChild(doc.createTextNode(wordUniqueness ? PGTUtil.TRUE : PGTUtil.FALSE));
         propContainer.appendChild(wordValue);
 
         // store option for ignoring case
-        wordValue = doc.createElement(PGTUtil.langPropIgnoreCaseXID);
-        wordValue.appendChild(doc.createTextNode(isIgnoreCase() ? PGTUtil.True : PGTUtil.False));
+        wordValue = doc.createElement(PGTUtil.LANG_PROP_IGNORE_CASE_XID);
+        wordValue.appendChild(doc.createTextNode(ignoreCase ? PGTUtil.TRUE : PGTUtil.FALSE));
         propContainer.appendChild(wordValue);
 
         // store option for disabling regex or pronunciations
-        wordValue = doc.createElement(PGTUtil.langPropDisableProcRegexXID);
-        wordValue.appendChild(doc.createTextNode(isDisableProcRegex() ? PGTUtil.True : PGTUtil.False));
+        wordValue = doc.createElement(PGTUtil.LANG_PROP_DISABLE_PROC_REGEX);
+        wordValue.appendChild(doc.createTextNode(disableProcRegex ? PGTUtil.TRUE : PGTUtil.FALSE));
         propContainer.appendChild(wordValue);
 
         // store option for enforcing RTL in conlang
-        wordValue = doc.createElement(PGTUtil.langPropEnforceRTLXID);
-        wordValue.appendChild(doc.createTextNode(isEnforceRTL() ? PGTUtil.True : PGTUtil.False));
+        wordValue = doc.createElement(PGTUtil.LANG_PROP_ENFORCE_RTL_XID);
+        wordValue.appendChild(doc.createTextNode(enforceRTL ? PGTUtil.TRUE : PGTUtil.FALSE));
         propContainer.appendChild(wordValue);
         
         // store option for overriding the regex display font
-        wordValue = doc.createElement(PGTUtil.langPropOverrideRegexFont);
-        wordValue.appendChild(doc.createTextNode(isOverrideRegexFont() ? PGTUtil.True : PGTUtil.False));
+        wordValue = doc.createElement(PGTUtil.LANG_PROP_OVERRIDE_REGEX_FONT_XID);
+        wordValue.appendChild(doc.createTextNode(overrideRegexFont ? PGTUtil.TRUE : PGTUtil.FALSE));
         propContainer.appendChild(wordValue);
 
         // store option for displaying local words in lexicon
-        wordValue = doc.createElement(PGTUtil.langPropUseLocalLexicon);
-        wordValue.appendChild(doc.createTextNode(isUseLocalWordLex() ? PGTUtil.True : PGTUtil.False));
+        wordValue = doc.createElement(PGTUtil.LANG_PROP_USE_LOCAL_LEX_XID);
+        wordValue.appendChild(doc.createTextNode(useLocalWordLex ? PGTUtil.TRUE : PGTUtil.FALSE));
         propContainer.appendChild(wordValue);
 
         // store option for Author and copyright info
-        wordValue = doc.createElement(PGTUtil.langPropAuthCopyrightXID);
+        wordValue = doc.createElement(PGTUtil.LANG_PROP_AUTH_COPYRIGHT_XID);
         wordValue.appendChild(doc.createTextNode(copyrightAuthorInfo));
         propContainer.appendChild(wordValue);
 
         // store option local language name
-        wordValue = doc.createElement(PGTUtil.langPropLocalLangNameXID);
+        wordValue = doc.createElement(PGTUtil.LANG_PROP_LOCAL_NAME_XID);
         wordValue.appendChild(doc.createTextNode(localLangName));
         propContainer.appendChild(wordValue);
         
         // store kerning value (default 0)
-        wordValue = doc.createElement(PGTUtil.langPropKerningVal);
+        wordValue = doc.createElement(PGTUtil.LANG_PROP_KERN_VAL_XID);
         wordValue.appendChild(doc.createTextNode(kerningSpace.toString()));
         propContainer.appendChild(wordValue);
         
+        // store option to use simplified conjugation autogeneration
+        wordValue = doc.createElement(PGTUtil.LANG_PROP_USE_SIMPLIFIED_CONJ);
+        wordValue.appendChild(doc.createTextNode(useSimplifiedConjugations ? PGTUtil.TRUE : PGTUtil.FALSE));
+        propContainer.appendChild(wordValue);
+        
         // store all replacement pairs
-        wordValue = doc.createElement(PGTUtil.langPropCharRepContainerXID);
+        wordValue = doc.createElement(PGTUtil.LANG_PROP_CHAR_REP_CONTAINER_XID);
         for (Entry<String, String> pair : getAllCharReplacements()) {
-            Element node = doc.createElement(PGTUtil.langPropCharRepNodeXID);
+            Element node = doc.createElement(PGTUtil.LANG_PROPCHAR_REP_NODE_XID);
             
-            Element val = doc.createElement(PGTUtil.langPropCharRepCharacterXID);
+            Element val = doc.createElement(PGTUtil.LANG_PROP_CHAR_REP_CHAR_XID);
             val.appendChild(doc.createTextNode(pair.getKey()));
             node.appendChild(val);
             
-            val = doc.createElement(PGTUtil.langPropCharRepValueXID);
+            val = doc.createElement(PGTUtil.LANG_PROP_CHAR_REP_VAL_XID);
             val.appendChild(doc.createTextNode(pair.getValue()));
             node.appendChild(val);
             
@@ -676,10 +751,10 @@ public class PropertiesManager {
     }
 
     /**
-     * @param localLangName the localLangName to set
+     * @param _localLangName the localLangName to set
      */
-    public void setLocalLangName(String localLangName) {
-        this.localLangName = localLangName;
+    public void setLocalLangName(String _localLangName) {
+        this.localLangName = _localLangName;
     }
 
     /**
@@ -690,24 +765,10 @@ public class PropertiesManager {
     }
 
     /**
-     * @param copyrightAuthorInfo the copyrightAuthorInfo to set
+     * @param _copyrightAuthorInfo the copyrightAuthorInfo to set
      */
-    public void setCopyrightAuthorInfo(String copyrightAuthorInfo) {
-        this.copyrightAuthorInfo = copyrightAuthorInfo;
-    }
-
-    /**
-     * @return the enableRomanization
-     */
-    public boolean isEnableRomanization() {
-        return enableRomanization;
-    }
-
-    /**
-     * @param enableRomanization the enableRomanization to set
-     */
-    public void setEnableRomanization(boolean enableRomanization) {
-        this.enableRomanization = enableRomanization;
+    public void setCopyrightAuthorInfo(String _copyrightAuthorInfo) {
+        this.copyrightAuthorInfo = _copyrightAuthorInfo;
     }
 
     /**
@@ -718,10 +779,27 @@ public class PropertiesManager {
     }
 
     /**
-     * @param kerningSpace the kerningSpace to set
+     * @param _kerningSpace the kerningSpace to set
      */
-    public void setKerningSpace(Double kerningSpace) {
-        this.kerningSpace = kerningSpace;
+    public void setKerningSpace(Double _kerningSpace) {
+        this.kerningSpace = _kerningSpace;
+    }
+    
+    /**
+     * Tests whether the alphabet covers all words in the lexicon
+     * @return 
+     */
+    public boolean isAlphabetComplete() {
+        boolean ret = true;
+        
+        for (ConWord word : core.getWordCollection().getWordNodes()) {
+            if (!testStringAgainstAlphabet(word.getValue())) {
+                ret = false;
+                break;
+            }
+        }
+        
+        return ret;
     }
     
     /**
@@ -731,37 +809,59 @@ public class PropertiesManager {
      * order menu
      */
     public boolean testStringAgainstAlphabet(String testString) {
-        boolean ret = true;
         int longestChar = alphaOrder.getLongestEntry();
+        boolean ret = false;
         
-        if (!alphaOrder.isEmpty()) {
+        // an empty string means having reached the end of the word without issue. Return true.
+        if (testString.isEmpty()) {
+            ret = true;
+        } else if (!alphaOrder.isEmpty()) {
             String currentCharacter = ""; // Linguistic character (can be made up of multiple string entries)
             
-            // loop on every character
             for (char c : testString.toCharArray()) {
+                if (c == ' ') { // spaces are skipped in all parsing
+                    continue;
+                }
+                
                 currentCharacter += c; // add current character to unmatched prior character (or set value if last character matched)
                 
                 // if current string longer than any recorded, fail
                 if (currentCharacter.length() > longestChar) {
                     ret = false;
                     break;
+                } else if (alphaOrder.containsKey(currentCharacter) 
+                        && testStringAgainstAlphabet(testString.substring(currentCharacter.length()))) {
+                    ret = true;
+                    break;
                 }
-                
-                // if current character found, blank (otherwise loop to add)
-                if (alphaOrder.containsKey(currentCharacter)) {
-                    currentCharacter = "";
-                }
-            }
-            
-            // if not blanked, the last characte never matched
-            if (!currentCharacter.isEmpty()) {
-                ret = false;
             }
         }
         
         return ret;
     }
-
+    
+    /**
+     * Attempts to find characters which are present in a word but missing from the alphabet
+     * @param search
+     * @return 
+     */
+    public String findBadLetters(String search) {
+        for (int curLength = 1; curLength < search.length(); curLength++) {
+            for (int pos = 0; pos + curLength < search.length(); pos++) {
+                // remove segment to test
+                String clearedString = search.substring(0, pos)
+                        + search.substring(pos + curLength, search.length() - 1);
+                
+                // if removed segment makes the string legal, it's likely the culprit
+                if (testStringAgainstAlphabet(clearedString)) {
+                    return search.substring(pos, pos + curLength);
+                }
+            }
+        }
+        
+        return "???";
+    }
+    
     /**
      * @return the overrideRegexFont
      */
@@ -770,10 +870,10 @@ public class PropertiesManager {
     }
 
     /**
-     * @param overrideRegexFont the overrideRegexFont to set
+     * @param _overrideRegexFont the overrideRegexFont to set
      */
-    public void setOverrideRegexFont(boolean overrideRegexFont) {
-        this.overrideRegexFont = overrideRegexFont;
+    public void setOverrideRegexFont(boolean _overrideRegexFont) {
+        this.overrideRegexFont = _overrideRegexFont;
     }
 
     /**
@@ -784,35 +884,23 @@ public class PropertiesManager {
     }
 
     /**
-     * @param useLocalWordLex the useLocalWordLex to set
+     * @param _useLocalWordLex the useLocalWordLex to set
      */
-    public void setUseLocalWordLex(boolean useLocalWordLex) {
-        this.useLocalWordLex = useLocalWordLex;
+    public void setUseLocalWordLex(boolean _useLocalWordLex) {
+        this.useLocalWordLex = _useLocalWordLex;
     }
-    
+
     /**
-     * Refreshes all fonts in PolyGlot, ensuring that the most recent versions
-     * of given fonts installed on the system are used.
-     * @throws java.lang.Exception
+     * @return the useSimplifiedConjugations
      */
-    public void refreshFonts() throws Exception {
-        try {
-            File updatedConFont = PFontHandler.getFontFile(conFont);
-            File updatedLocalFont = PFontHandler.getFontFile(localFont);
-        
-            if (updatedConFont != null) {
-                conFont = PFontHandler.getFontFromFile(updatedConFont.getAbsolutePath());
-                conFont = conFont.deriveFont(conFontStyle, (float)conFontSize);
-                cachedConFont = IOHandler.getByteArrayFromFile(updatedConFont);
-            }
-            
-            if (updatedLocalFont != null) {
-                localFont = PFontHandler.getFontFromFile(updatedLocalFont.getAbsolutePath());
-                localFont = localFont.deriveFont((float)localFontSize);
-                cachedLocalFont = IOHandler.getByteArrayFromFile(updatedLocalFont);
-            }
-        } catch (Exception e) {
-            throw new Exception("Unable to refresh fonts: " + e.getLocalizedMessage());
-        }
+    public boolean isUseSimplifiedConjugations() {
+        return useSimplifiedConjugations;
+    }
+
+    /**
+     * @param _useSimplifiedConjugations the useSimplifiedConjugations to set
+     */
+    public void setUseSimplifiedConjugations(boolean _useSimplifiedConjugations) {
+        this.useSimplifiedConjugations = _useSimplifiedConjugations;
     }
 }

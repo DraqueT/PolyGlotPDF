@@ -103,7 +103,7 @@ public class FormattedTextHelperTest {
 
     @Test
     public void testGetSectionTextFontSpecifec() {
-        GrammarChapNode chap = core.getGrammarManager().getChapters().get(0);
+        GrammarChapNode chap = core.getGrammarManager().getChapters()[0];
         
         String sectionText = ((GrammarSectionNode)chap.getFirstChild()).getSectionText();
         List<Entry<String, PFontInfo>> results = FormattedTextHelper.getSectionTextFontSpecifec(sectionText, core);
@@ -124,7 +124,7 @@ public class FormattedTextHelperTest {
     @Test
     public void testStorageFormat() throws Exception {
         PGrammarPane pane = new PGrammarPane(core);
-        GrammarChapNode chap = core.getGrammarManager().getChapters().get(0);
+        GrammarChapNode chap = core.getGrammarManager().getChapters()[0];
         String sectionText = ((GrammarSectionNode)chap.getChildAt(1)).getSectionText();
         
         FormattedTextHelper.restoreFromString(sectionText, pane, core);

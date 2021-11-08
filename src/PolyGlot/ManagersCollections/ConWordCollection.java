@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2014-2019, Draque Thompson, draquemail@gmail.com
+ * Copyright (c) 2014-2021, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
+ * Licensed under: MIT Licence
  * See LICENSE.TXT included with this code to read the full license agreement.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -19,16 +19,20 @@
  */
 package PolyGlot.ManagersCollections;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import PolyGlot.Nodes.ConWord;
 import PolyGlot.DictCore;
 import PolyGlot.FormattedTextHelper;
-import PolyGlot.Nodes.DeclensionNode;
-import PolyGlot.Nodes.DeclensionPair;
+import PolyGlot.Nodes.ConjugationNode;
+import PolyGlot.Nodes.ConjugationPair;
 import PolyGlot.Nodes.EtyExternalParent;
 import PolyGlot.PGTUtil;
 import PolyGlot.Nodes.TypeNode;
 import PolyGlot.RankedObject;
-import PolyGlot.WebInterface;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,26 +41,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Random;
+import PolyGlot.RegexTools;
+import PolyGlot.RegexTools.ReplaceOptions;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 /**
- * @author draque
+ * @author Draque Thompson
  *
  */
 public class ConWordCollection extends DictionaryCollection<ConWord> {
 
-    private final String splitChar = ",";
+    private static final String SPLIT_CHAR = ",";
     private final DictCore core;
-    private final Map<String, Integer> allConWords;
-    private final Map<String, Integer> allLocalWords;
     private boolean orderByLocal = false;
 
     public ConWordCollection(DictCore _core) {
-        bufferNode = new ConWord();
-        ((ConWord) bufferNode).setCore(_core);
-        allConWords = new HashMap<>();
-        allLocalWords = new HashMap<>();
+        super(new ConWord());
+
+        bufferNode.setCore(_core);
         core = _core;
     }
 
@@ -76,14 +80,12 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
         insWord.setEqual(bufferNode);
         insWord.setId(_id);
 
-        ((ConWord) bufferNode).setParent(this);
-        ((ConWord) bufferNode).setCore(core);
+        bufferNode.setParent(this);
+        bufferNode.setCore(core);
         ret = super.insert(_id, bufferNode);
 
-        balanceWordCounts(insWord, true);
-
         bufferNode = new ConWord();
-        ((ConWord) bufferNode).setCore(core);
+        bufferNode.setCore(core);
 
         return ret;
     }
@@ -93,30 +95,50 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
      *
      * @return an iterator full of all illegal conwords
      */
-    public List<ConWord> illegalFilter() {
+    public ConWord[] illegalFilter() {
         List<ConWord> retList = new ArrayList<>();
 
-        nodeMap.values().stream().filter((word) -> !((ConWord)word).isWordLegal()).forEach((word) -> retList.add((ConWord)word));
-        
-        for (Object object : nodeMap.values()) {
-            ConWord curWord = (ConWord) object;
-
-            if (!curWord.isWordLegal()) {
+        for (ConWord curWord : nodeMap.values()) {
+            if ((!curWord.isWordLegal() && !curWord.isRulesOverride()) 
+                    && !retList.contains(curWord)) {
                 retList.add(curWord);
             }
         }
 
-        Collections.sort(retList);
-        return retList;
+        this.safeSort(retList);
+        return retList.toArray(new ConWord[0]);
+    }
+    
+    /**
+     * Loads Swadesh list from buffered input stream.Presumes that list is line separated.Lines PREFIXED with the # character will be skipped.If it appears in the middle of a line, it will be parsed regularly.
+     * @param bs
+     * @param showPrompt
+     * @throws java.io.IOException 
+     * @throws java.lang.Exception 
+     */
+    public void loadSwadesh(BufferedInputStream bs, boolean showPrompt) throws IOException, Exception {
+        // buh
     }
 
     /**
      * Checks whether word is legal and returns error reason if not
-     *
+     * DO NOT RUN IN LOOP. Instead use overridden version with cached count values
      * @param word word to check legality of
-     * @return Conword with any illegal entries saved as word values
+     * @return ConWord with any illegal entries saved as word values
      */
     public ConWord testWordLegality(ConWord word) {
+        return this.testWordLegality(word, this.getConWordCount(), this.getLocalCount());
+    }
+    
+    /**
+     * Checks whether word is legal and returns error reason if not
+     *
+     * @param word word to check legality of
+     * @param wordCount map of conword values to the number of times they appear in a word (use getConWordCount)
+     * @param localCount map of localword values to the number of times they appear in a word (use getLocalCount)
+     * @return ConWord with any illegal entries saved as word values
+     */
+    public ConWord testWordLegality(ConWord word, Map<String, Integer> wordCount, Map<String, Integer> localCount) {
         ConWord ret = new ConWord();
         String pronunciation = "";
         
@@ -127,7 +149,7 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
             ret.setDefinition("Pronunciation cannot be generated, likely due to malformed regex in pronunciation menu.");
         }
 
-        if (word.getValue().length() == 0) {
+        if (word.getValue().isEmpty()) {
             ret.setValue(core.conLabel() + " word value cannot be blank.");
         }
 
@@ -135,42 +157,47 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
             ret.typeError = "Types set to mandatory.";
         }
 
-        if (word.getLocalWord().length() == 0 && core.getPropertiesManager().isLocalMandatory()) {
+        if (word.getLocalWord().isEmpty() && core.getPropertiesManager().isLocalMandatory()) {
             ret.setLocalWord(core.localLabel() + " word set to mandatory.");
         }
 
-        if (core.getPropertiesManager().isWordUniqueness() && core.getWordCollection().containsWord(word.getValue())) {
-            ret.setValue(ret.getValue() + (ret.getValue().length() == 0 ? "" : "\n")
+        if (core.getPropertiesManager().isWordUniqueness() 
+                && wordCount.containsKey(word.getValue())
+                && wordCount.get(word.getValue()) > 1) {
+            ret.setValue(ret.getValue() + (ret.getValue().isEmpty() ? "" : "\n")
                     + core.conLabel() + " words set to enforced unique: this conword exists elsewhere.");
         }
 
-        if (core.getPropertiesManager().isLocalUniqueness() && word.getLocalWord().length() != 0
-                && core.getWordCollection().containsLocalMultiples(word.getLocalWord())) {
-            ret.setLocalWord(ret.getLocalWord() + (ret.getLocalWord().length() == 0 ? "" : "\n")
+        String localWord = word.getLocalWord();
+        if (core.getPropertiesManager().isLocalUniqueness() 
+                && !localWord.isEmpty()
+                && localCount.containsKey(localWord)
+                && localCount.get(localWord) > 1) {
+            ret.setLocalWord(ret.getLocalWord() + (ret.getLocalWord().isEmpty() ? "" : "\n")
                     + core.localLabel() + " words set to enforced unique: this local exists elsewhere.");
         }
 
-        TypeNode wordType = core.getTypes().getNodeById(word.getWordTypeId());
+        TypeNode wordPos = core.getTypes().getNodeById(word.getWordTypeId());
 
-        ret.setDefinition(ret.getDefinition() + (ret.getDefinition().length() == 0 ? "" : "\n"));
+        ret.setDefinition(ret.getDefinition() + (ret.getDefinition().isEmpty() ? "" : "\n"));
 
-        if (wordType != null) {
-            String typeRegex = wordType.getPattern();
+        if (wordPos != null) {
+            String posRegex = wordPos.getPattern();
 
-            if (wordType.isProcMandatory() && pronunciation.isEmpty() && !word.isProcOverride()) {
-                ret.setDefinition(ret.getDefinition() + (ret.getDefinition().length() == 0 ? "" : "\n")
-                        + "Pronunciation required for " + wordType.getValue() + " words.");
+            if (wordPos.isProcMandatory() && pronunciation.isEmpty() && !word.isProcOverride()) {
+                ret.setDefinition(ret.getDefinition() + (ret.getDefinition().isEmpty() ? "" : "\n")
+                        + "Pronunciation required for " + wordPos.getValue() + " words.");
             }
             
-            if (typeRegex.length() != 0 && !word.getValue().matches(typeRegex)) {
-                ret.setDefinition(ret.getDefinition() + (ret.getDefinition().length() == 0 ? "" : "\n")
+            if (!posRegex.isEmpty() && RegexTools.isRegexLegal(posRegex) && !word.getValue().matches(posRegex)) {
+                ret.setDefinition(ret.getDefinition() + (ret.getDefinition().isEmpty() ? "" : "\n")
                         + "Word does not match enforced pattern for type: " + word.getWordTypeDisplay() + ".");
                 ret.setProcOverride(true);
             }
             
-            if (wordType.isDefMandatory() && word.getDefinition().isEmpty()) {
-                ret.setDefinition(ret.getDefinition() + (ret.getDefinition().length() == 0 ? "" : "\n")
-                        + "Definition required for " + wordType.getValue() + " words.");
+            if (wordPos.isDefMandatory() && word.getDefinition().isEmpty()) {
+                ret.setDefinition(ret.getDefinition() + (ret.getDefinition().isEmpty() ? "" : "\n")
+                        + "Definition required for " + wordPos.getValue() + " words.");
             }
         }
 
@@ -188,14 +215,12 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
     public Integer insert() throws Exception {
         Integer ret;
 
-        ((ConWord) bufferNode).setParent(this);
-        ((ConWord) bufferNode).setCore(core);
+        bufferNode.setParent(this);
+        bufferNode.setCore(core);
         ret = super.insert(bufferNode);
 
-        balanceWordCounts((ConWord) bufferNode, true);
-
         bufferNode = new ConWord();
-        ((ConWord) bufferNode).setCore(core);
+        bufferNode.setCore(core);
 
         return ret;
     }
@@ -210,129 +235,82 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
     }
 
     /**
-     * Tests whether collection contains a particular local word
-     *
-     * @param local string value to search for
-     * @return whether multiples of local word exists in collection
-     */
-    public boolean containsLocalMultiples(String local) {
-        boolean ret = false;
-
-        if (allLocalWords.containsKey(local)) {
-            ret = allLocalWords.get(local) > 1;
-        }
-
-        return ret;
-    }
-
-    /**
-     * Tests whether collection contains a particular conword
-     *
-     * @param word string value to search for
-     * @return whether multiples of conword exists in the collection
-     */
-    public boolean containsWord(String word) {
-        boolean ret = false;
-
-        if (allConWords.containsKey(word)) {
-            ret = allConWords.get(word) > 1;
-        }
-
-        return ret;
-    }
-
-    /**
-     * Balances count of conwords and localwords (string values)
-     *
-     * @param insWord word to factor into counts
-     * @param additive true if adding, false if removing
-     */
-    private void balanceWordCounts(ConWord insWord, boolean additive) {
-        Integer curCount =  0;
-        if (allConWords.containsKey(insWord.getValue())) {
-            Integer tmp = allConWords.get(insWord.getValue());
-            if (tmp != null) {
-                curCount = tmp;
-            }
-        }
-
-        allConWords.remove(insWord.getValue());
-        allConWords.put(insWord.getValue(), curCount + (additive ? 1 : -1));
-
-        curCount =  0;
-        if (allLocalWords.containsKey(insWord.getLocalWord())) {
-            Integer tmp = allLocalWords.get(insWord.getLocalWord());
-            if (tmp != null) {
-                curCount = tmp;
-            }
-        }
-
-        allLocalWords.remove(insWord.getLocalWord());
-        allLocalWords.put(insWord.getLocalWord(), curCount + (additive ? 1 : -1));
-    }
-
-    /**
-     * Balances word counts when modifying word value or local word MUST BE RUN
-     * BEFORE PERSISTING NEW VALUES TO WORD
-     *
-     * @param id id of word to modify
-     * @param wordVal new conword value
-     * @param wordLoc new local word value
-     */
-    public void extertalBalanceWordCounts(Integer id, String wordVal, String wordLoc) {
-        ConWord oldWord = getNodeById(id);
-        ConWord newWord = new ConWord();
-
-        newWord.setValue(wordVal);
-        newWord.setLocalWord(wordLoc);
-
-        balanceWordCounts(oldWord, false);
-        balanceWordCounts(newWord, true);
-    }
-
-    /**
      * Tests whether a value exists in the dictionary currently
+     * Do not use this within a loop.
      *
-     * @param word value to search for
+     * @param conWord value to search for
      * @return true if exists, false otherwise
      */
-    public boolean testWordValueExists(String word) {
-        return allConWords.containsKey(word) && allConWords.get(word) > 0;
+    public boolean testWordValueExists(String conWord) {
+        return true;
     }
 
     /**
      * Tests whether a value exists in the dictionary currently
-     *
+     * Do not use this within a loop.
+     * 
      * @param local value to search for
      * @return true if exists, false otherwise
      */
     public boolean testLocalValueExists(String local) {
-        return allLocalWords.containsKey(local) && allLocalWords.get(local) > 0;
+        return false;
+    }
+    
+    /**
+     * Generates and returns map with strings to count of
+     * string occurrences within local words of the lexicon
+     * @return 
+     */
+    public Map<String, Integer> getLocalCount() {
+        Map<String, Integer> ret = new HashMap<>();
+        
+        for (ConWord word : this.nodeMap.values()) {
+            String local = word.getLocalWord();
+            if (ret.containsKey(local)) {
+                ret.replace(local, ret.get(local) + 1);
+            } else {
+                ret.put(local,1);
+            }
+        }
+        
+        return ret;
+    }
+    
+    /**
+     * Generates and returns map with strings to count of
+     * string occurrences within conlang words of the lexicon
+     * @return 
+     */
+    public Map<String, Integer> getConWordCount() {
+        Map<String, Integer> ret = new HashMap<>();
+        
+        for (ConWord word : this.nodeMap.values()) {
+            String local = word.getValue();
+            if (ret.containsKey(local)) {
+                ret.replace(local, ret.get(local) + 1);
+            } else {
+                ret.put(local,1);
+            }
+        }
+        
+        return ret;
     }
 
     /**
-     * Deletes word and balances all dependencies
+     * Deletes word and clears all declensions
      *
      * @param _id ID of word to delete
      * @throws Exception
      */
     @Override
     public void deleteNodeById(Integer _id) throws Exception {
-        ConWord deleteWord = this.getNodeById(_id);
-
-        balanceWordCounts(deleteWord, false);
         super.deleteNodeById(_id);
-        core.getDeclensionManager().clearAllDeclensionsWord(_id);
+        core.getConjugationManager().clearAllConjugationsWord(_id);
     }
 
     @Override
     public void modifyNode(Integer _id, ConWord _modNode) throws Exception {
-        // do bookkeepingfor word counts
-        ConWord oldWord = getNodeById(_id);
-        balanceWordCounts(oldWord, false);
-        balanceWordCounts((ConWord) _modNode, true);
-        ((ConWord) _modNode).setCore(core);
-
+        _modNode.setCore(core);
         super.modifyNode(_id, _modNode);
     }
 
@@ -347,26 +325,9 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
      */
     @Override
     protected Integer insert(Integer _id, ConWord _buffer) throws Exception {
-        ((ConWord) _buffer).setCore(core);
-        ((ConWord) _buffer).setParent(this);
+        _buffer.setCore(core);
+        _buffer.setParent(this);
         return super.insert(_id, _buffer);
-    }
-
-    /**
-     * recalculates all non-overridden pronunciations
-     *
-     * @throws java.lang.Exception
-     */
-    public void recalcAllProcs() throws Exception {
-        List<ConWord> words = this.getWordNodes();
-
-        for (ConWord curWord : words) {
-            // only runs if word's pronunciation not overridden
-            if (!curWord.isProcOverride()) {
-                curWord.setPronunciation(core.getPronunciationMgr().getPronunciation(curWord.getValue()));
-                this.modifyNode(curWord.getId(), curWord);
-            }
-        }
     }
 
     /**
@@ -375,66 +336,62 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
      * @param _match The string value to match for
      * @return list of matching words
      */
-    public List<ConWord> getSuggestedTransWords(String _match) {
+    public ConWord[] getSuggestedTransWords(String _match) {
+        ArrayList<ConWord> ret = new ArrayList<>();
         List<ConWord> localEquals = new ArrayList<>();
         List<ConWord> localContains = new ArrayList<>();
-        List<RankedObject> definitionContains = new ArrayList<>();
+        List<RankedObject<ConWord>> definitionContains = new ArrayList<>();
         Iterator<Entry<Integer, ConWord>> allWords = nodeMap.entrySet().iterator();
 
-        // on empty, return empty list
-        if (_match.length() == 0) {
-            return localEquals;
-        }
+        // on empty, return empty array
+        if (!_match.isEmpty()) {
+            Entry<Integer, ConWord> curEntry;
+            ConWord curWord;
 
-        Entry<Integer, ConWord> curEntry;
-        ConWord curWord;
+            // cycles through all words, searching for matches
+            while (allWords.hasNext()) {
+                curEntry = allWords.next();
+                curWord = curEntry.getValue();
 
-        // cycles through all words, searching for matches
-        while (allWords.hasNext()) {
-            curEntry = allWords.next();
-            curWord = curEntry.getValue();
+                String word = curWord.getValue();
+                String compare = _match;
+                String definition = curWord.getDefinition();
 
-            String word = curWord.getValue();
-            String compare = _match;
-            String definition = curWord.getDefinition();
+                // on ignore case, force all to lowercase
+                if (core.getPropertiesManager().isIgnoreCase()) {
+                    word = word.toLowerCase();
+                    compare = compare.toLowerCase();
+                    definition = definition.toLowerCase();
+                }
 
-            // on ignore case, force all to lowercase
-            if (core.getPropertiesManager().isIgnoreCase()) {
-                word = word.toLowerCase();
-                compare = compare.toLowerCase();
-                definition = definition.toLowerCase();
+                if (word.equals(compare)) {
+                    // local word equality is the highest ranking match
+                    localEquals.add(curWord);
+                } else if (word.contains(compare)) {
+                    // local word contains value is the second highest ranking match
+                    localContains.add(curWord);
+                } else if (definition.contains(compare)) {
+                    // definition contains is ranked third, and itself raked internally
+                    // by match position
+                    definitionContains.add(new RankedObject<>(curWord, definition.indexOf(compare)));
+                }
             }
 
-            if (word.equals(compare)) {
-                // local word equility is the highest ranking match
-                localEquals.add(curWord);
-            } else if (word.contains(compare)) {
-                // local word contains value is the second highest ranking match
-                localContains.add(curWord);
-            } else if (definition.contains(compare)) {
-                // definition contains is ranked third, and itself raked inernally
-                // by match position
-                definitionContains.add(new RankedObject(curWord, definition.indexOf(compare)));
+            Collections.sort(definitionContains);
+
+            // concatenate results
+            ret.addAll(localEquals);
+            ret.addAll(localContains);
+
+            // must add through iteration here
+            Iterator<RankedObject<ConWord>> it = definitionContains.iterator();
+            while (it.hasNext()) {
+                RankedObject<ConWord> curObject = it.next();
+                ret.add(curObject.getHolder());
             }
         }
 
-        Collections.sort(definitionContains);
-
-        // concatinate results
-        ArrayList<ConWord> ret = new ArrayList<>();
-        ret.addAll(localEquals);
-        ret.addAll(localContains);
-
-        // must add through iteration here
-        Iterator<RankedObject> it = definitionContains.iterator();
-        while (it.hasNext()) {
-            RankedObject curObject = it.next();
-            ConWord curDefMatch = (ConWord) curObject.getHolder();
-
-            ret.add(curDefMatch);
-        }
-
-        return ret;
+        return ret.toArray(new ConWord[0]);
     }
 
     /**
@@ -448,7 +405,7 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
      * @return an list of conwords which match the given search
      * @throws Exception on filtering error
      */
-    public List<ConWord> filteredList(ConWord _filter) throws Exception {
+    public ConWord[] filteredList(ConWord _filter) throws Exception {
         ConWordCollection retValues = new ConWordCollection(core);
         retValues.setAlphaOrder(alphaOrder);
 
@@ -490,8 +447,8 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
                 if (!_filter.getDefinition().trim().isEmpty()) {
                     boolean cont = true;
 
-                    for (String def1 : _filter.getDefinition().split(splitChar)) {
-                        if (definition.contains(def1)) {
+                    for (String def1 : _filter.getDefinition().split(SPLIT_CHAR)) {
+                        if (definition.matches(".*" + def1 + ".*")) {
                             cont = false;
                             break;
                         }
@@ -510,15 +467,10 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
 
                 // local word
                 if (!_filter.getLocalWord().trim().isEmpty()) {
-                    boolean cont = true;
-
-                    for (String loc1 : _filter.getLocalWord().split(splitChar)) {
-                        if (local.contains(loc1)) {
-                            cont = false;
-                            break;
-                        }
-                    }
-                    if (cont) {
+                    String match = _filter.getLocalWord().trim();
+                    
+                    if (!local.contains(match)
+                            && !local.matches(match)) {
                         continue;
                     }
                 }
@@ -527,7 +479,7 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
                 if (!_filter.getValue().trim().isEmpty()) {
                     boolean cont = true;
 
-                    for (String val1 : _filter.getValue().split(splitChar)) {
+                    for (String val1 : _filter.getValue().split(SPLIT_CHAR)) {
                         if (matchHeadAndDeclensions(val1, curWord)) {
                             cont = false;
                             break;
@@ -541,15 +493,10 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
 
                 // pronunciation
                 if (!_filter.getPronunciation().trim().isEmpty()) {
-                    boolean cont = true;
-
-                    for (String proc1 : _filter.getPronunciation().split(splitChar)) {
-                        if (proc.contains(proc1)) {
-                            cont = false;
-                        }
-                    }
-
-                    if (cont) {
+                    String match = _filter.getPronunciation();
+                    
+                    if (!proc.contains(match)
+                            && !proc.matches(match)) {
                         continue;
                     }
                 }
@@ -563,7 +510,9 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
                                 .childHasParent(curWord.getId(), parWord.getId())) {
                             continue;
                         }
-                    } if (parent instanceof EtyExternalParent) {
+                    }
+                    
+                    if (parent instanceof EtyExternalParent) {
                         EtyExternalParent parExt = (EtyExternalParent)parent;
                         if (parExt.getId() != -1 && !core.getEtymologyManager()
                                 .childHasExtParent(curWord.getId(), parExt.getUniqueId())) {
@@ -576,7 +525,7 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
                 retValues.insert(curWord.getId());
             } catch (Exception e) {
                 // IOHandler.writeErrorLog(e);
-                throw new Exception("FILTERING ERROR: " + e.getMessage());
+                throw new Exception("FILTERING ERROR: " + e.getMessage(), e);
             }
         }
 
@@ -599,25 +548,24 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
 
         if (matchText.trim().isEmpty()
                 || head.matches(matchText)
-                || head.startsWith(matchText)) {
+                || head.contains(matchText)) {
             ret = true;
         }
         TypeNode type = core.getTypes().getNodeById(word.getWordTypeId());
 
         if (type != null && !ret) {
             int typeId = type.getId();
-            Iterator<DeclensionPair> decIt = core.getDeclensionManager().getAllCombinedIds(typeId).iterator();
+            ConjugationPair[] decPairs = core.getConjugationManager().getAllCombinedIds(typeId);
 
-            while (!ret && decIt.hasNext()) {
-                // silently skip erroring entries. Too cumbersone to deal with during a search
+            for (ConjugationPair curPair : decPairs) {
+                // silently skip erroring entries. Too cumbersome to deal with during a search
                 try {
-                    DeclensionPair curPair = decIt.next();
-                    String declension = core.getDeclensionManager()
-                            .declineWord(word, curPair.combinedId, word.getValue());
+                    String declension = core.getConjugationManager()
+                            .declineWord(word, curPair.combinedId);
 
                     if (!declension.trim().isEmpty()
                             && (declension.matches(matchText)
-                            || declension.startsWith(matchText))) {
+                            || declension.contains(matchText))) {
                         ret = true;
                     }
                 } catch (Exception e) {
@@ -641,11 +589,11 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
     @Override
     public void clear() {
         bufferNode = new ConWord();
-        ((ConWord) bufferNode).setCore(core);
+        bufferNode.setCore(core);
     }
 
     public ConWord getBufferWord() {
-        return (ConWord) bufferNode;
+        return bufferNode;
     }
 
     public void setBufferWord(ConWord bufferWord) {
@@ -661,12 +609,12 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
      *
      * @return
      */
-    public List<ConWord> getWordNodes() {
+    public ConWord[] getWordNodes() {
         List<ConWord> retList = new ArrayList<>(nodeMap.values());
 
-        Collections.sort(retList);
+        this.safeSort(retList);
 
-        return retList;
+        return retList.toArray(new ConWord[0]);
     }
 
     /**
@@ -675,7 +623,7 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
      *
      * @return
      */
-    public List<ConWord> getNodesLocalOrder() {
+    public ConWord[] getNodesLocalOrder() {
         List<ConWord> cycleList = new ArrayList<>(nodeMap.values());
         List<ConWord> retList = new ArrayList<>();
 
@@ -701,10 +649,10 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
         });
 
         orderByLocal = true;
-        Collections.sort(retList);
+        this.safeSort(retList);
         orderByLocal = false;
 
-        return retList;
+        return retList.toArray(new ConWord[0]);
     }
 
     /**
@@ -726,6 +674,11 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
      */
     public int addWord(ConWord _addWord) throws Exception {
         int ret;
+        if (_addWord.getCore() == null) {
+            _addWord.setCore(core);
+        }
+        
+        this.clear();
         bufferNode.setEqual(_addWord);
 
         ret = insert();
@@ -741,7 +694,7 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
      * @return text in plain tag
      */
     public static String formatPlain(String toPlain, DictCore core) {
-        String defaultFont = "face=\"" + core.getPropertiesManager().getFontLocal().getFamily() + "\"";
+        String defaultFont = "face=\"" + core.getPropertiesManager().getFontLocalFamily() + "\"";
         return "<font " + defaultFont + ">" + toPlain + "</font>";
     }
 
@@ -753,7 +706,8 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
      * @return text in plain tag
      */
     public static String formatCon(String toCon, DictCore core) {
-        String defaultFont = "face=\"" + core.getPropertiesManager().getFontCon().getFamily() + "\"";
+        // TODO: This is very bad. Strip this out at the same time that the language stats tool is rewritten. Use css style.
+        String defaultFont = "face=\"" + core.getPropertiesManager().getFontConFamily() + "\"";
         return "<font " + defaultFont + ">" + toCon + "</font>";
     }
 
@@ -764,77 +718,12 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
      * @param rootElement root element of document
      */
     public void writeXML(Document doc, Element rootElement) {
-        List<ConWord> wordLoop = getWordNodes();
-        Element lexicon = doc.createElement(PGTUtil.lexiconXID);
+        ConWord[] wordLoop = getWordNodes();
+        Element lexicon = doc.createElement(PGTUtil.LEXICON_XID);
         
-        wordLoop.stream().forEach((curWord) -> {
-            Element wordNode = doc.createElement(PGTUtil.wordXID);
-
-            Element wordValue = doc.createElement(PGTUtil.wordIdXID);
-            Integer wordId = curWord.getId();
-            wordValue.appendChild(doc.createTextNode(wordId.toString()));
-            wordNode.appendChild(wordValue);
-
-            wordValue = doc.createElement(PGTUtil.localWordXID);
-            wordValue.appendChild(doc.createTextNode(curWord.getLocalWord()));
-            wordNode.appendChild(wordValue);
-
-            wordValue = doc.createElement(PGTUtil.conWordXID);
-            wordValue.appendChild(doc.createTextNode(curWord.getValue()));
-            wordNode.appendChild(wordValue);
-
-            wordValue = doc.createElement(PGTUtil.wordTypeIdXID);
-            wordValue.appendChild(doc.createTextNode(curWord.getWordTypeId().toString()));
-            wordNode.appendChild(wordValue);
-
-            try {
-                wordValue = doc.createElement(PGTUtil.wordProcXID);
-                wordValue
-                        .appendChild(doc.createTextNode(curWord.getPronunciation()));
-                wordNode.appendChild(wordValue);
-            } catch (Exception e) {
-                // Do nothing. Users are made aware of this issue elsewhere.
-                // IOHandler.writeErrorLog(e);
-            }
-
-            wordValue = doc.createElement(PGTUtil.wordDefXID);
-            wordValue.appendChild(doc.createTextNode(WebInterface.archiveHTML(curWord.getDefinition())));
-            wordNode.appendChild(wordValue);
-
-            wordValue = doc.createElement(PGTUtil.wordProcOverrideXID);
-            wordValue.appendChild(doc.createTextNode(curWord.isProcOverride() ? PGTUtil.True : PGTUtil.False));
-            wordNode.appendChild(wordValue);
-
-            wordValue = doc.createElement(PGTUtil.wordAutoDeclenOverrideXID);
-            wordValue.appendChild(doc.createTextNode(curWord.isOverrideAutoDeclen() ? PGTUtil.True : PGTUtil.False));
-            wordNode.appendChild(wordValue);
-
-            wordValue = doc.createElement(PGTUtil.wordRuleOverrideXID);
-            wordValue.appendChild(doc.createTextNode(curWord.isRulesOverride() ? PGTUtil.True : PGTUtil.False));
-            wordNode.appendChild(wordValue);
-
-            wordValue = doc.createElement(PGTUtil.wordClassCollectionXID);
-            for (Entry<Integer, Integer> entry : curWord.getClassValues()) {
-                Element classVal = doc.createElement(PGTUtil.wordClassAndValueXID);
-                classVal.appendChild(doc.createTextNode(entry.getKey() + "," + entry.getValue()));
-                wordValue.appendChild(classVal);
-            }
-            wordNode.appendChild(wordValue);
-
-            wordValue = doc.createElement(PGTUtil.wordClassTextValueCollectionXID);
-            for (Entry<Integer, String> entry : curWord.getClassTextValues()) {
-                Element classVal = doc.createElement(PGTUtil.wordClassTextValueXID);
-                classVal.appendChild(doc.createTextNode(entry.getKey() + "," + entry.getValue()));
-                wordValue.appendChild(classVal);
-            }
-            wordNode.appendChild(wordValue);
-            
-            wordValue = doc.createElement(PGTUtil.wordEtymologyNotesXID);
-            wordValue.appendChild(doc.createTextNode(curWord.getEtymNotes()));
-            wordNode.appendChild(wordValue);
-            
-            lexicon.appendChild(wordNode);
-        });
+        for (ConWord curWord : wordLoop) {
+            curWord.writeXML(doc, lexicon);
+        }
         
         rootElement.appendChild(lexicon);
     }
@@ -847,17 +736,16 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
      * @param typeId ID of word type to clear values from
      */
     public void clearDeprecatedDeclensions(Integer typeId) {
-        DeclensionManager dm = core.getDeclensionManager();
-        Map<Integer, List<DeclensionPair>> comTypeDecs = new HashMap<>();
+        ConjugationManager dm = core.getConjugationManager();
+        Map<Integer, ConjugationPair[]> comTypeDecs = new HashMap<>();
 
         // iterates over every word
         nodeMap.values().stream()
-                .filter((word) -> ((ConWord)word).getWordTypeId().equals(typeId))
-                .forEach((node) -> {
-            ConWord word = (ConWord) node;
-            List<DeclensionPair> curDeclensions;
+                .filter((word) -> (word).getWordTypeId().equals(typeId))
+                .forEach((word) -> {
+            ConjugationPair[] curDeclensions;
 
-            // ensure I'm only generating decelnsion patterns for any given part of speech only once
+            // ensure I'm only generating declension patterns for any given part of speech only once
             if (comTypeDecs.containsKey(word.getWordTypeId())) {
                 curDeclensions = comTypeDecs.get(word.getWordTypeId());
             } else {
@@ -866,15 +754,15 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
             }
 
             // retrieves all stored declension values for word
-            Map<String, DeclensionNode> decMap = dm.getWordDeclensions(word.getId());
+            Map<String, ConjugationNode> decMap = dm.getWordConjugation(word.getId());
 
             // removes all legitimate declensions from map
-            curDeclensions.forEach((curPair) -> {
+            for (ConjugationPair curPair : curDeclensions) {
                 decMap.remove(curPair.combinedId);
-            });
+            }
 
             // wipe remaining values from word
-            dm.removeDeclensionValues(word.getId(), decMap.values());
+            dm.removeConjugationValues(word.getId(), decMap.values());
         });
     }
     
@@ -885,9 +773,7 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
      * @param valueId value deleted
      */
     public void classValueDeleted(int classId, int valueId) {
-        nodeMap.values().forEach((value)->{
-            ConWord curWord = (ConWord)value;
-            
+        nodeMap.values().forEach((curWord)->{
             if(curWord.wordHasClassValue(classId, valueId)) {
                 curWord.setClassValue(classId, -1);
             }
@@ -895,7 +781,7 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
     }
     
     @Override
-    public Object notFoundNode() {
+    public ConWord notFoundNode() {
         ConWord notFound = new ConWord();
 
         notFound.setValue("WORD NOT FOUND");
@@ -912,7 +798,7 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
      * than programmatic or logical consumption
      * @return 
      */
-    public List<ConWordDisplay> getWordNodesDisplay() {
+    public ConWordDisplay[] getWordNodesDisplay() {
         return toDisplayList(getWordNodes());
     }
     
@@ -921,7 +807,7 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
      * @param wordList List of words to convert to display list
      * @return 
      */
-    public List<ConWordDisplay> toDisplayList(List<ConWord> wordList) {
+    public ConWordDisplay[] toDisplayList(ConWord[] wordList) {
         List<ConWordDisplay> ret = new ArrayList<>();
         
         for (ConWord conWord : wordList) {
@@ -929,17 +815,32 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
         }
         
         if (core.getPropertiesManager().isUseLocalWordLex()) {
-            Collections.sort(ret);
+            this.safeSortDisplay(ret);
         }
         
-        return ret;
+        return ret.toArray(new ConWordDisplay[0]);
+    }
+    
+    /**
+     * Safely sorts a list of the collection display. Workaround for tyical safesort on super
+     * (Accounts for possible failure due to incomplete/incoherent alphabet written by user)
+     * @param sort 
+     */
+    public void safeSortDisplay(List<ConWordDisplay> sort) {
+        try {
+            alphaOrder.setMissingChars(false);
+            Collections.sort(sort);
+        } catch (Exception e) {
+            alphaOrder.setMissingChars(true);
+            Collections.sort(sort);
+        }
     }
     
     /**
      * Wrapper class of ConWord that allows for more display options in menus
      * Separated to eliminate possibility of display logic interfering with program logic
      */
-    public class ConWordDisplay implements Comparable<ConWordDisplay> {
+    public static class ConWordDisplay implements Comparable<ConWordDisplay> {
         private final ConWord conWord;
         private final DictCore core;
         
@@ -974,7 +875,7 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
        @Override
        public int compareTo(ConWordDisplay _compare) {
            String myLocalWord = conWord.getLocalWord();
-           String compareLocalWord = _compare.getConWord().getLocalWord();
+           String compareLocalWord = _compare.conWord.getLocalWord();
            int ret;
 
            if (core.getPropertiesManager().isUseLocalWordLex()) {
@@ -984,7 +885,7 @@ public class ConWordCollection extends DictionaryCollection<ConWord> {
                     ret = myLocalWord.compareTo(compareLocalWord);
                }
            } else {
-               ret = conWord.compareTo(_compare.getConWord());
+               ret = conWord.compareTo(_compare.conWord);
            }
 
            return ret;

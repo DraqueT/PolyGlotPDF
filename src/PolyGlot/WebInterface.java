@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2014-2019, Draque Thompson, draquemail@gmail.com
+ * Copyright (c) 2014-2020, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
- *  See LICENSE.TXT included with this code to read the full license agreement.
+ * Licensed under: MIT Licence
+ * See LICENSE.TXT included with this code to read the full license agreement.
 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -23,7 +23,9 @@ import PolyGlot.Nodes.ImageNode;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
+import java.net.Socket;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,45 +57,49 @@ public class WebInterface {
         URL url;
 
         try {
-            url = new URL("https://drive.google.com/uc?export=download&id=0B2RMQ7sRXResN3VwLTAwTFE0ZlE");
+            url = new URL(PGTUtil.UPDATE_FILE_URL);
 
-            try (InputStream is = url.openStream()) {
-                Scanner s = new Scanner(is);
-
+            try ( InputStream is = url.openStream();  Scanner s = new Scanner(is)) {
                 while (s.hasNext()) {
                     xmlText += s.nextLine();
                 }
             }
-        } catch (MalformedURLException e) {
-            throw new MalformedURLException("Server unavailable or not found.");
-        } catch (IOException e) {
-            throw new IOException("Update file not found. Please check for updates manually at PolyGlot homepage.");
+        }
+        catch (MalformedURLException e) {
+            throw new Exception("Server unavailable or not found.", e);
+        }
+        catch (IOException e) {
+            throw new IOException("Update file not found or has been moved. Please check for updates manually at PolyGlot homepage.", e);
         }
 
-        if (xmlText.length() != 0) {
+        if (xmlText.contains("<TITLE>Moved Temporarily</TITLE>")) {
+            throw new Exception("Update file not found or has been moved. Please check for updates manually at PolyGlot homepage.");
+        }
+
+        if (!xmlText.isEmpty()) {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
             InputSource is = new InputSource(new StringReader(xmlText));
-            Document doc = builder.parse(is);
-
-            ret = doc;
+            ret = builder.parse(is);
         }
 
         return ret;
     }
-    
+
     /**
      * Gets only the text from a PTextPane's html
+     *
      * @param text
-     * @return 
+     * @return
      */
     public static String getTextFromHtml(String text) {
         return Jsoup.parse(text).text();
     }
-    
+
     /**
-     * Takes archived HTML and translates it into display HTML.
-     * - Replaces archival image references to temp image refs
+     * Takes archived HTML and translates it into display HTML. - Replaces
+     * archival image references to temp image refs
+     *
      * @param html archived html
      * @param core
      * @return unarchived html
@@ -103,7 +109,7 @@ public class WebInterface {
         // pattern for finding archived images
         Pattern pattern = Pattern.compile("(<img src=\"[^>,_]+\">)");
         Matcher matcher = pattern.matcher(html);
-        
+
         while (matcher.find()) {
             String regPath = matcher.group(1);
             regPath = regPath.replace("<img src=\"", "");
@@ -111,56 +117,139 @@ public class WebInterface {
             regPath = regPath.replace(">", "");
             try {
                 int imageId = Integer.parseInt(regPath);
-                ImageNode image = (ImageNode)core.getImageCollection().getNodeById(imageId);
-                html = html.replace("<img src=\""+ regPath + "\">", "<img src=\"file:///"+ image.getImagePath() + "\">");
-            } catch (IOException | NumberFormatException e) {
-                throw new Exception("problem loading image : " + e.getLocalizedMessage());
+                ImageNode image = (ImageNode) core.getImageCollection().getNodeById(imageId);
+                html = html.replace("<img src=\"" + regPath + "\">", "<img src=\"file:///" + image.getImagePath() + "\">");
+            }
+            catch (IOException | NumberFormatException e) {
+                throw new Exception("problem loading image : " + e.getLocalizedMessage(), e);
             }
         }
-        
+
         return html;
     }
-    
+
     /**
-     * Takes display HTML and translates it into archival HTML.
-     * - Replaces actual image references with static, id based refs
+     * Takes display HTML and translates it into archival HTML. - Replaces
+     * actual image references with static, id based refs
+     *
      * @param html unarchived html
+     * @param core
      * @return archivable html
      */
-    public static String archiveHTML(String html) {
-        // pattern for finding unarchived images
-        Pattern pattern = Pattern.compile("(<img src=\"[^>,_]+_[^>]+\">)");
-        Matcher matcher = pattern.matcher(html);
-        
-        while (matcher.find()) {
-            String regPath = matcher.group(1);
-            regPath = regPath.replace("<img src=\"file:///", "");
-            regPath = regPath.replace("\"", "");
-            regPath = regPath.replace(">", "");
-            String fileName = IOHandler.getFilenameFromPath(regPath);
-            String arcPath = fileName.replaceFirst("_.*", "");
-            html = html.replace("file:///" + regPath, arcPath);
+    public static String archiveHTML(String html, DictCore core) {
+//        // pattern for finding unarchived images
+//        Pattern pattern = Pattern.compile("(<img src=\"[^>,_]+_[^>]+\">)");
+//        Matcher matcher = pattern.matcher(html);
+//
+//        while (matcher.find()) {
+//            String regPath = matcher.group(1);
+//            regPath = regPath.replace("<img src=\"file:///", "");
+//            regPath = regPath.replace("\"", "");
+//            regPath = regPath.replace(">", "");
+//            String fileName = core.getOSHandler().ioHandler.getFilenameFromPath(regPath);
+//            String arcPath = fileName.replaceFirst("_.*", "");
+//            html = html.replace("file:///" + regPath, arcPath);
+//        }
+//
+//        return html;
+        return "DUMMY";
+    }
+
+    /**
+     * Tests current internet connection based on google
+     *
+     * @return true if connected
+     */
+    public static boolean isInternetConnected() {
+        String address = "www.google.com";
+        final int PORT = 80;
+        final int TIMEOUT = 5000;
+        boolean ret = false;
+
+        try {
+            try ( Socket soc = new Socket()) {
+                soc.connect(new InetSocketAddress(address, PORT), TIMEOUT);
+            }
+            ret = true;
         }
-        
-        return html;
+        catch (IOException e) {
+            // TODO: write to log?
+        }
+
+        return ret;
+    }
+
+    /**
+     * encodes html characters
+     * @param s
+     * @return 
+     */
+    public static String encodeHTML(String s) {
+        if (s == null || s.length() == 0) {
+            return s;
+        }
+
+        StringBuilder sb = new StringBuilder(s);
+        for (int i = 0; i < sb.length(); i++) {
+            char c = sb.charAt(i);
+            switch (c) {
+                case '&':
+                    sb.replace(i, i + 1, "&amp;");
+                    i += 4;
+                    break;
+                case '"':
+                    sb.replace(i, i + 1, "&quot;");
+                    i += 5;
+                    break;
+                case '\'':
+                    sb.replace(i, i + 1, "&apos;");
+                    i += 5;
+                    break;
+                case '>':
+                    sb.replace(i, i + 1, "&gt;");
+                    i += 3;
+                    break;
+                case '<':
+                    sb.replace(i, i + 1, "&lt;");
+                    i += 3;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        return sb.toString();
     }
     
     /**
-     * This cycles through the body of HTML and generates an ordered list of objects
-     * representing all of the items in the HTML. Consumers are responsible for
-     * identifying objects.
-     * @param html HTML to extract from
-     * @param core dictionary core
+     * Escapes html characters (symmetrical to encodeHTML)
+     * @param s
      * @return 
-     * @throws java.io.IOException 
      */
-    public static List<Object> getElementsHTMLBody(String html, DictCore core) throws IOException {
+    public static String escapeHTML(String s) {
+        return s.replace("&amp;", "&")
+                .replace("&quot;", "\"")
+                .replace("&apos;", "'")
+                .replace("&gt;", ">")
+                .replace("&lt;", "<");
+    }
+    
+    /**
+     * This cycles through the body of HTML and generates an ordered list of
+     * objects representing all of the items in the HTML. Consumers are
+     * responsible for identifying objects.
+     *
+     * @param html HTML to extract from
+     * @return
+     * @throws java.io.IOException
+     */
+    public static List<Object> getElementsHTMLBody(String html) throws IOException {
         List<Object> ret = new ArrayList<>();
         String body = html.replaceAll(".*<body>", "");
         body = body.replaceAll("</body>.*", "");
-        Pattern pattern = Pattern.compile("([^<]+|<[^>]+>)");//("(<[^>]+>)");
+        Pattern pattern = Pattern.compile("([^<]+|<[^>]+>)");
         Matcher matcher = pattern.matcher(body);
-        
+
         // loops on unincumbered text and tags.
         while (matcher.find()) {
             String token = matcher.group(1);
@@ -174,12 +263,15 @@ public class WebInterface {
             } else {
                 // this is plaintext
                 String add = token.trim();
-                if (add.length() != 0) {
+                if (!add.isEmpty()) {
                     ret.add(add + " ");
                 }
             }
         }
-        
+
         return ret;
+    }
+
+    private WebInterface() {
     }
 }

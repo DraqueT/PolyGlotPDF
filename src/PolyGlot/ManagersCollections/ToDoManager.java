@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2018, DThompson
+ * Copyright (c) 2018-2020, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
- * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
- *  See LICENSE.TXT included with this code to read the full license agreement.
+ * Licensed under: MIT Licence
+ * See LICENSE.TXT included with this code to read the full license agreement.
 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -19,6 +19,7 @@
  */
 package PolyGlot.ManagersCollections;
 
+import java.util.Objects;
 import PolyGlot.Nodes.ToDoNode;
 import PolyGlot.PGTUtil;
 import org.w3c.dom.Document;
@@ -34,7 +35,7 @@ public class ToDoManager {
     
     public ToDoNode getRoot() {
         if (root == null) {
-            root = new ToDoNode(null, PGTUtil.ToDoRoot, false);
+            root = new ToDoNode(null, "", false);
         }
         return root;
     }
@@ -46,7 +47,7 @@ public class ToDoManager {
      * @param rootElement root element of document
      */
     public void writeXML(Document doc, Element rootElement) {
-        Element toDos = doc.createElement(PGTUtil.ToDoLogXID);
+        Element toDos = doc.createElement(PGTUtil.TODO_LOG_XID);
         
         getRoot().writeXML(doc, toDos);
         
@@ -74,5 +75,27 @@ public class ToDoManager {
     
     public void popBuffer() {
         bufferNode = bufferNode.getParent();
+    }
+    
+    @Override
+    public boolean equals(Object comp) {
+        boolean ret = false;
+        
+        if (comp == this) {
+            ret = true;
+        } else if (comp instanceof ToDoManager) {
+            ToDoManager compMan = (ToDoManager)comp;
+            
+            ret = (root == null && compMan.root == null) || root.equals(compMan.root);
+        }
+        
+        return ret;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 5;
+        hash = 19 * hash + Objects.hashCode(this.root);
+        return hash;
     }
 }

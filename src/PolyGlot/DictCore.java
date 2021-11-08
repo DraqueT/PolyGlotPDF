@@ -20,12 +20,11 @@
 package PolyGlot;
 
 import PolyGlot.CustomControls.PAlphaMap;
-import PolyGlot.Nodes.DeclensionNode;
 import PolyGlot.ManagersCollections.PropertiesManager;
 import PolyGlot.ManagersCollections.GrammarManager;
 import PolyGlot.ManagersCollections.PronunciationMgr;
 import PolyGlot.ManagersCollections.FamilyManager;
-import PolyGlot.ManagersCollections.DeclensionManager;
+import PolyGlot.ManagersCollections.ConjugationManager;
 import PolyGlot.ManagersCollections.TypeCollection;
 import PolyGlot.ManagersCollections.ConWordCollection;
 import PolyGlot.ManagersCollections.EtymologyManager;
@@ -34,8 +33,8 @@ import PolyGlot.ManagersCollections.OptionsManager;
 import PolyGlot.ManagersCollections.ReversionManager;
 import PolyGlot.ManagersCollections.RomanizationManager;
 import PolyGlot.ManagersCollections.ToDoManager;
-import PolyGlot.ManagersCollections.VisualStyleManager;
 import PolyGlot.ManagersCollections.WordClassCollection;
+import PolyGlot.Nodes.ConjugationNode;
 import java.awt.FontFormatException;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -50,7 +49,7 @@ public class DictCore {
     private final String version = "2.5";
     private ConWordCollection wordCollection;
     private TypeCollection typeCollection;
-    private DeclensionManager declensionMgr;
+    private ConjugationManager conjugationManager;
     private PropertiesManager propertiesManager;
     private PronunciationMgr pronuncMgr;
     private RomanizationManager romMgr;
@@ -58,10 +57,9 @@ public class DictCore {
     // private LogoCollection logoCollection; //logographs not currently printed to PDF
     private GrammarManager grammarManager;
     private OptionsManager optionsManager;
-    private WordClassCollection wordPropCollection;
+    private WordClassCollection wordClassCollection;
     private ImageCollection imageCollection;
     private EtymologyManager etymologyManager;
-    private VisualStyleManager visualStyleManager;
     private ReversionManager reversionManager;
     private ToDoManager toDoManager;
     private Object clipBoard;
@@ -81,18 +79,17 @@ public class DictCore {
     private void initializeDictCore() throws IOException {
         wordCollection = new ConWordCollection(this);
         typeCollection = new TypeCollection(this);
-        declensionMgr = new DeclensionManager(this);
-        propertiesManager = new PropertiesManager(this);
+        conjugationManager = new ConjugationManager(this);
+        propertiesManager = new PropertiesManager();
         pronuncMgr = new PronunciationMgr(this);
         romMgr = new RomanizationManager(this);
         famManager = new FamilyManager(this);
         //logoCollection = new LogoCollection(this); //logographs not currently printed to PDF
         grammarManager = new GrammarManager();
         optionsManager = new OptionsManager(this);
-        wordPropCollection = new WordClassCollection(this);
-        imageCollection = new ImageCollection();
+        wordClassCollection = new WordClassCollection(this);
+        imageCollection = new ImageCollection(this);
         etymologyManager = new EtymologyManager(this);
-        visualStyleManager = new VisualStyleManager(this);
         reversionManager = new ReversionManager(this);
         toDoManager = new ToDoManager();
 
@@ -101,7 +98,7 @@ public class DictCore {
         wordCollection.setAlphaOrder(alphaOrder);
         typeCollection.setAlphaOrder(alphaOrder);
         //logoCollection.setAlphaOrder(alphaOrder); //logographs not currently printed to PDF
-        wordPropCollection.setAlphaOrder(alphaOrder);
+        wordClassCollection.setAlphaOrder(alphaOrder);
 
         populateVersionHierarchy();
     }
@@ -136,10 +133,6 @@ public class DictCore {
     public ImageCollection getImageCollection() {
         return imageCollection;
     }
-    
-    public VisualStyleManager getVisualStyleManager() {
-        return visualStyleManager;
-    }
 
     /**
      * Returns whether core is currently loading a file
@@ -157,20 +150,11 @@ public class DictCore {
      * @throws java.net.URISyntaxException
      */
     public String getWorkingDirectory() throws URISyntaxException {
-        String ret = propertiesManager.getOverrideProgramPath();
-
-        ret = ret.isEmpty() ? DictCore.class.getProtectionDomain().getCodeSource().getLocation().toURI().g‌​etPath() : ret;
-
-        // in some circumstances (but not others) the name of the jar will be appended... remove
-        if (ret.endsWith(PGTUtil.jarArchiveName)) {
-            ret = ret.replace(PGTUtil.jarArchiveName, "");
-        }
-
-        return ret;
+        return DictCore.class.getProtectionDomain().getCodeSource().getLocation().toURI().g‌​etPath();
     }
 
-    public WordClassCollection getWordPropertiesCollection() {
-        return wordPropCollection;
+    public WordClassCollection getWordClassCollection() {
+        return wordClassCollection;
     }
 
     /**
@@ -380,16 +364,16 @@ public class DictCore {
      *
      * @param wordId ID of word to clear of all declensions
      */
-    public void clearAllDeclensionsWord(Integer wordId) {
-        declensionMgr.clearAllDeclensionsWord(wordId);
+    public void clearAllConjugagtionsWord(Integer wordId) {
+        conjugationManager.clearAllConjugationsWord(wordId);
     }
 
-    public DeclensionNode getDeclensionTemplate(Integer typeId, Integer templateId) {
-        return declensionMgr.getDeclensionTemplate(typeId, templateId);
+    public ConjugationNode getConjugationTemplate(Integer typeId, Integer templateId) {
+        return conjugationManager.getConjugationTemplate(typeId, templateId);
     }
 
-    public DeclensionManager getDeclensionManager() {
-        return declensionMgr;
+    public ConjugationManager getConjugationManager() {
+        return conjugationManager;
     }
 
     public TypeCollection getTypes() {

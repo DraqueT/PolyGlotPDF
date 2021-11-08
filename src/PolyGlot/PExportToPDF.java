@@ -23,11 +23,12 @@ import PolyGlot.CustomControls.GrammarChapNode;
 import PolyGlot.CustomControls.GrammarSectionNode;
 import PolyGlot.CustomControls.PPanelDrawEtymology;
 import PolyGlot.Nodes.ConWord;
-import PolyGlot.Nodes.DeclensionNode;
-import PolyGlot.Nodes.DeclensionPair;
+import PolyGlot.Nodes.ConjugationNode;
+import PolyGlot.Nodes.ConjugationPair;
 import PolyGlot.Nodes.ImageNode;
 import PolyGlot.Nodes.PEntry;
 import PolyGlot.Nodes.PronunciationNode;
+import PolyGlot.Nodes.TypeNode;
 import PolyGlot.Nodes.WordClassValue;
 import PolyGlot.Nodes.WordClass;
 import com.itextpdf.io.font.FontConstants;
@@ -296,7 +297,7 @@ public class PExportToPDF {
 
             document.add(new AreaBreak(AreaBreakType.NEXT_PAGE));
             Paragraph fin = new Paragraph("Created with PolyGlot: Language Creation Tool Version " + printVersion + "\n");
-            fin.add(new Link("Get PolyGlot Here", PdfAction.createURI(PGTUtil.homePage)).setUnderline());
+            fin.add(new Link("Get PolyGlot Here", PdfAction.createURI(PGTUtil.HOMEPAGE)).setUnderline());
             fin.add(new Text("\nPolyGlot Created By Draque Thompson"));
             fin.setFontSize(20);
             fin.setFontColor(ColorConstants.LIGHT_GRAY);
@@ -351,14 +352,14 @@ public class PExportToPDF {
     private Map<Integer, String> getGlossKey() {
         Map<Integer, String> ret = new HashMap<>();
 
-        core.getTypes().getNodes().forEach((curNode) -> {
+        for (TypeNode curNode : core.getTypes().getNodes()) {
             if (curNode.getGloss().length() == 0) {
                 ret.put(curNode.getId(), curNode.getValue());
             } else {
                 ret.put(curNode.getId(), curNode.getGloss());
                 setPrintGlossKey(true);
             }
-        });
+        }
 
         return ret;
     }
@@ -448,7 +449,7 @@ public class PExportToPDF {
                     WordClassValue value;
 
                     try {
-                        prop = (WordClass) core.getWordPropertiesCollection()
+                        prop = (WordClass) core.getWordClassCollection()
                                 .getNodeById(curEntry.getKey());
                         value = prop.getValueById(curEntry.getValue());
                     } catch (Exception e) {
@@ -480,7 +481,7 @@ public class PExportToPDF {
                         dictEntry.add(new Text(", "));
                     }
 
-                    WordClass prop = (WordClass) core.getWordPropertiesCollection().getNodeById(curEntry.getKey());
+                    WordClass prop = (WordClass) core.getWordClassCollection().getNodeById(curEntry.getKey());
                     varChunk = new Text(prop.getValue());
                     varChunk.setFont(unicodeFontItalic);
                     dictEntry.add(varChunk);
@@ -521,7 +522,7 @@ public class PExportToPDF {
 
             }
 
-            List<Object> defList = WebInterface.getElementsHTMLBody(curWord.getDefinition(), core);
+            List<Object> defList = WebInterface.getElementsHTMLBody(curWord.getDefinition());
             if (!defList.isEmpty()) {
                 dictEntry.add(new Text("\n"));
                 for (Object o : defList) {
@@ -660,7 +661,7 @@ public class PExportToPDF {
                     WordClassValue value;
 
                     try {
-                        prop = (WordClass) core.getWordPropertiesCollection()
+                        prop = (WordClass) core.getWordClassCollection()
                                 .getNodeById(curEntry.getKey());
                         value = prop.getValueById(curEntry.getValue());
                     } catch (Exception e) {
@@ -691,7 +692,7 @@ public class PExportToPDF {
                         dictEntry.add(new Text(", "));
                     }
 
-                    WordClass prop = (WordClass) core.getWordPropertiesCollection().getNodeById(curEntry.getKey());
+                    WordClass prop = (WordClass) core.getWordClassCollection().getNodeById(curEntry.getKey());
                     varChunk = new Text(prop.getValue());
                     varChunk.setFont(unicodeFontItalic);
                     dictEntry.add(varChunk);
@@ -730,7 +731,7 @@ public class PExportToPDF {
 
             }
 
-            List<Object> defList = WebInterface.getElementsHTMLBody(curWord.getDefinition(), core);
+            List<Object> defList = WebInterface.getElementsHTMLBody(curWord.getDefinition());
             if (!defList.isEmpty()) {
                 dictEntry.add(new Text("\n"));
                 for (Object o : defList) {
@@ -780,11 +781,7 @@ public class PExportToPDF {
         table.addCell(new Paragraph("Character(s)").setFont(PdfFontFactory.createFont(FontConstants.COURIER_BOLD)));
         table.addCell(new Paragraph("Pronunciation").setFont(PdfFontFactory.createFont(FontConstants.COURIER_BOLD)));
 
-        Iterator<PronunciationNode> orthIt = core.getPronunciationMgr().getPronunciations().iterator();
-
-        while (orthIt.hasNext()) {
-            PronunciationNode curNode = orthIt.next();
-
+        for (PronunciationNode curNode : core.getPronunciationMgr().getPronunciations()) {
             String chars = curNode.getValue();
             Paragraph finChars = new Paragraph();
 
@@ -815,12 +812,12 @@ public class PExportToPDF {
         Text varChunk;
 
         if (printAllConjugations) {
-            for (DeclensionPair curPair : core.getDeclensionManager().getAllCombinedIds(curWord.getWordTypeId())) {
-                DeclensionNode curDeclension
-                        = core.getDeclensionManager().getDeclensionByCombinedId(
+            for (ConjugationPair curPair : core.getConjugationManager().getAllCombinedIds(curWord.getWordTypeId())) {
+                ConjugationNode curDeclension
+                        = core.getConjugationManager().getConjugationByCombinedId(
                                 curWord.getId(), curPair.combinedId);
 
-                if (core.getDeclensionManager().isCombinedDeclSurpressed(curPair.combinedId, curWord.getWordTypeId())) {
+                if (core.getConjugationManager().isCombinedConjlSurpressed(curPair.combinedId, curWord.getWordTypeId())) {
                     continue;
                 }
 
@@ -837,9 +834,7 @@ public class PExportToPDF {
                     declensionValue = curDeclension.getValue();
                 } else { // otherwise generate a value
                     try {
-                        declensionValue = core.getDeclensionManager().declineWord(curWord,
-                                curPair.combinedId,
-                                curWord.getValue());
+                        declensionValue = core.getConjugationManager().declineWord(curWord, curPair.combinedId);
                     } catch (Exception e) {
                         log += "Problem generating " + curPair.label
                                 + " due to bad regex. Please check regex for word form.";
@@ -864,7 +859,7 @@ public class PExportToPDF {
         Div ret = new Div();
         ret.setProperty(Property.DESTINATION, anchorPoint);
 
-        List<GrammarChapNode> gramList = core.getGrammarManager().getChapters();
+        GrammarChapNode[] gramList = core.getGrammarManager().getChapters();
 
         for (GrammarChapNode chap : gramList) {
             String chapName = chap.getName();
@@ -888,16 +883,12 @@ public class PExportToPDF {
                     String text = PGTUtil.stripRTL(entry.getKey());
 
                     if (text.startsWith("<img src")) {
-                        try {
-                            text = text.replace("<img src=\"", "").replace("\">", "");
-                            int imgId = Integer.parseInt(text);
-                            ImageNode imageNode = (ImageNode) core.getImageCollection().getNodeById(imgId);
-                            byte[] bytes = IOHandler.getBufferedImageByteArray(imageNode.getImage());
-                            Image pdfImage = new Image(ImageDataFactory.create(bytes));
-                            newSec.add(pdfImage);
-                        } catch (IOException | NumberFormatException e) {
-                            log += "\nUnable to include images from grammar section: " + curSec.getName();
-                        }
+                        text = text.replace("<img src=\"", "").replace("\">", "");
+                        int imgId = Integer.parseInt(text);
+                        ImageNode imageNode = (ImageNode) core.getImageCollection().getNodeById(imgId);
+                        byte[] bytes = imageNode.getImageBytes();
+                        Image pdfImage = new Image(ImageDataFactory.create(bytes));
+                        newSec.add(pdfImage);
                     } else {
                         if (core.getPropertiesManager().isEnforceRTL()
                                 && info.awtFont.equals(core.getPropertiesManager().getFontCon())) {
@@ -941,11 +932,10 @@ public class PExportToPDF {
         table.addCell(new Paragraph("Part of Speech").setFont(PdfFontFactory.createFont(FontConstants.COURIER_BOLD)));
         table.addCell(new Paragraph("Gloss").setFont(PdfFontFactory.createFont(FontConstants.COURIER_BOLD)));
 
-        core.getTypes().getNodes().forEach((curType) -> {
-            //for (TypeNode curType : core.getTypes().getNodes()) {
+        for (TypeNode curType : core.getTypes().getNodes()) {
             table.addCell(curType.getValue());
             table.addCell(curType.getGloss());
-        });
+        }
         ret.add(table);
 
         return ret;
