@@ -80,10 +80,7 @@ public final class CustHandlerFactory {
         String versionNumber = versionNode == null ? "0" : versionNode.getTextContent();
         int fileVersionHierarchy = PGTUtil.getVersionHierarchy(versionNumber);
         
-        if (fileVersionHierarchy == -1) {
-            throw new Exception("Please upgrade PolyGlot. The PGD file you are loading was "
-                        + "written with a newer version with additional features: Ver " + versionNumber + ".");
-        } else if (fileVersionHierarchy < PGTUtil.getVersionHierarchy("0.7.5")) {
+        if (fileVersionHierarchy < PGTUtil.getVersionHierarchy("0.7.5")) {
             throw new Exception("Version " + versionNumber + " no longer supported. Load/save with older version of "
                         + "PolyGlot (0.7.5 through 1.2) to upconvert.");
         }
