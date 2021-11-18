@@ -76,7 +76,7 @@ public class PolyGlot {
     private static String pdfExport(String[] args) {
         String ret;
 
-        if (args.length == 17) {
+        if (args.length == 19) {
             String readFrom = args[1];
             String writeTo = args[2];
             
@@ -100,6 +100,8 @@ public class PolyGlot {
                     pdf.setPrintWordEtymologies(args[14].toUpperCase().equals(PGTUtil.TRUE));
                     pdf.setConFontLocation(args[15]);
                     pdf.setPrintVersion(args[16]);
+                    pdf.setPrintPhrases(args[17].toUpperCase().equals(PGTUtil.TRUE));
+                    pdf.setLocalFontLocation(args[18]);
 
                     pdf.print();
 

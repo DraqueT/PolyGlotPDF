@@ -4,4 +4,5 @@ target
 PolyGlot_error_log.log
 PolyGlot_error.log
 java_8_bridge.zip
+PolyGlot_J8_Bridge.jar
 *.ini

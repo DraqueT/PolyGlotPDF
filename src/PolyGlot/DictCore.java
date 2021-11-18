@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2020, Draque Thompson, draquemail@gmail.com
+ * Copyright (c) 2014-2021, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
  * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
@@ -30,6 +30,7 @@ import PolyGlot.ManagersCollections.ConWordCollection;
 import PolyGlot.ManagersCollections.EtymologyManager;
 import PolyGlot.ManagersCollections.ImageCollection;
 import PolyGlot.ManagersCollections.OptionsManager;
+import PolyGlot.ManagersCollections.PhraseManager;
 import PolyGlot.ManagersCollections.ReversionManager;
 import PolyGlot.ManagersCollections.RomanizationManager;
 import PolyGlot.ManagersCollections.ToDoManager;
@@ -62,6 +63,7 @@ public class DictCore {
     private EtymologyManager etymologyManager;
     private ReversionManager reversionManager;
     private ToDoManager toDoManager;
+    private PhraseManager phraseManager;
     private Object clipBoard;
     private boolean curLoading = false;
     private final Map<String, Integer> versionHierarchy = new HashMap<>();
@@ -92,6 +94,7 @@ public class DictCore {
         etymologyManager = new EtymologyManager(this);
         reversionManager = new ReversionManager(this);
         toDoManager = new ToDoManager();
+        phraseManager = new PhraseManager(this);
 
         PAlphaMap<String, Integer> alphaOrder = propertiesManager.getAlphaOrder();
 
@@ -467,5 +470,9 @@ public class DictCore {
         versionHierarchy.put("2.3.3", 34);
         versionHierarchy.put("2.4", 35);
         versionHierarchy.put("2.5", 36);
+    }
+
+    public PhraseManager getPhraseManager() {
+        return phraseManager;
     }
 }

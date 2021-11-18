@@ -248,6 +248,18 @@ public class PGTUtil {
     public static final String OPTIONS_TODO_DIV_LOCATION = "ToDoDividerLocation";
     public static final String OPTIONS_DIVIDER_POSITION = "OptionsDividerPosition";
     public static final String OPTIONS_MAXIMIZED = "OptionsMaximized";
+    
+    // properties for phrasebook
+    public static final String PHRASEBOOK_XID = "phraseBookCollection";
+    public static final String PHRASE_NODE_XID = "phraseNode";
+    public static final String PHRASE_ID_XID = "phraseId";
+    public static final String PHRASE_GLOSS_XID = "phraseGloss";
+    public static final String PHRASE_CONPHRASE_XID = "phraseConPhrase";
+    public static final String PHRASE_LOCALPHRASE_XID = "phraseLocalPhrase";
+    public static final String PHRASE_PRONUNCIATION_XID = "phrasePronunciation";
+    public static final String PHRASE_PRONUNCIATION_OVERRIDE_XID = "phrasePronunciationOverride";
+    public static final String PHRASE_NOTES_XID = "phraseNotes";
+    public static final String PHRASE_ORDER_XID = "phraseNotesOrder";
 
     // Java 8 bridge constants
     public static final String JAVA8_JAVA_COMMAND = "java";

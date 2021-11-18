@@ -71,7 +71,7 @@
                       <Component id="jPanel2" alignment="0" max="32767" attributes="0"/>
                       <Group type="102" attributes="0">
                           <Component id="jLabel4" min="-2" max="-2" attributes="0"/>
-                          <EmptySpace min="0" pref="266" max="32767" attributes="0"/>
+                          <EmptySpace min="0" pref="313" max="32767" attributes="0"/>
                       </Group>
                       <Group type="102" alignment="0" attributes="0">
                           <Component id="txtSavePath" max="32767" attributes="0"/>
@@ -114,7 +114,7 @@
                       <Component id="jButton1" alignment="3" min="-2" max="-2" attributes="0"/>
                       <Component id="txtPgtFile" alignment="3" min="-2" max="-2" attributes="0"/>
                   </Group>
-                  <EmptySpace pref="33" max="32767" attributes="0"/>
+                  <EmptySpace max="-2" attributes="0"/>
                   <Component id="txtTitle" min="-2" max="-2" attributes="0"/>
                   <EmptySpace max="-2" attributes="0"/>
                   <Component id="txtSubtitle" min="-2" max="-2" attributes="0"/>
@@ -123,7 +123,7 @@
                   <EmptySpace max="-2" attributes="0"/>
                   <Component id="jLabel4" min="-2" max="-2" attributes="0"/>
                   <EmptySpace max="-2" attributes="0"/>
-                  <Component id="jPanel2" min="-2" max="-2" attributes="0"/>
+                  <Component id="jPanel2" max="32767" attributes="0"/>
                   <EmptySpace max="-2" attributes="0"/>
               </Group>
           </Group>
@@ -211,7 +211,7 @@
                                   <Component id="chkLocalCon" alignment="0" min="-2" max="-2" attributes="0"/>
                                   <Component id="chkLogographs" alignment="0" min="-2" max="-2" attributes="0"/>
                               </Group>
-                              <EmptySpace pref="137" max="32767" attributes="0"/>
+                              <EmptySpace pref="143" max="32767" attributes="0"/>
                           </Group>
                           <Group type="102" attributes="0">
                               <Group type="103" groupAlignment="0" attributes="0">
@@ -219,6 +219,7 @@
                                   <Component id="chkPageNum" alignment="0" min="-2" max="-2" attributes="0"/>
                                   <Component id="chkEtymology" alignment="0" min="-2" max="-2" attributes="0"/>
                                   <Component id="chkPrintConjugations" alignment="0" min="-2" max="-2" attributes="0"/>
+                                  <Component id="chkPrintPhrases" alignment="0" min="-2" max="-2" attributes="0"/>
                               </Group>
                               <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
                           </Group>
@@ -247,7 +248,9 @@
                       <Component id="chkPrintConjugations" min="-2" max="-2" attributes="0"/>
                       <EmptySpace type="unrelated" max="-2" attributes="0"/>
                       <Component id="chkEtymology" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace max="32767" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="chkPrintPhrases" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace pref="44" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -339,6 +342,12 @@
               <AuxValues>
                 <AuxValue name="JavaCodeGenerator_CreateCodeCustom" type="java.lang.String" value="new JCheckBox()"/>
               </AuxValues>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="chkPrintPhrases">
+              <Properties>
+                <Property name="selected" type="boolean" value="true"/>
+                <Property name="text" type="java.lang.String" value="Print Phrases"/>
+              </Properties>
             </Component>
           </SubComponents>
         </Container>

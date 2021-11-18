@@ -487,4 +487,26 @@ public class PronunciationMgr {
         
         return ret;
     }
+    
+    /**
+     * Generates IPA version of an entire phrase
+     * @param phrase
+     * @return 
+     */
+    public String getIpaOfPhrase(String phrase) {
+        String[] words = phrase.split("\\s");
+        String curWord = "";
+        String result = "";
+        
+        try {
+            for (String word : words) {
+                curWord = word;
+                result += this.getPronunciation(word) + " ";
+            }
+        } catch (Exception e) {
+            result += "\n ERROR CONVERTING PATTERN: " + curWord; 
+        }
+        
+        return result;
+    }
 }

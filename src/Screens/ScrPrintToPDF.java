@@ -90,6 +90,7 @@ public class ScrPrintToPDF extends JDialog {
         chkGloss = new JCheckBox();
         chkEtymology = new JCheckBox();
         chkPrintConjugations = new JCheckBox();
+        chkPrintPhrases = new javax.swing.JCheckBox();
         txtTitle = new JTextField();
         txtSubtitle = new JTextField();
         jScrollPane2 = new javax.swing.JScrollPane();
@@ -167,6 +168,9 @@ public class ScrPrintToPDF extends JDialog {
         chkPrintConjugations.setText("Print All Conjugations");
         chkPrintConjugations.setToolTipText("If checked, words will have a list of all conjugated forms printed under their definitions.");
 
+        chkPrintPhrases.setSelected(true);
+        chkPrintPhrases.setText("Print Phrases");
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -181,13 +185,14 @@ public class ScrPrintToPDF extends JDialog {
                             .addComponent(chkOrtho)
                             .addComponent(chkLocalCon)
                             .addComponent(chkLogographs))
-                        .addContainerGap(137, Short.MAX_VALUE))
+                        .addContainerGap(143, Short.MAX_VALUE))
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(chkGloss)
                             .addComponent(chkPageNum)
                             .addComponent(chkEtymology)
-                            .addComponent(chkPrintConjugations))
+                            .addComponent(chkPrintConjugations)
+                            .addComponent(chkPrintPhrases))
                         .addGap(0, 0, Short.MAX_VALUE))))
         );
         jPanel2Layout.setVerticalGroup(
@@ -211,7 +216,9 @@ public class ScrPrintToPDF extends JDialog {
                 .addComponent(chkPrintConjugations)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(chkEtymology)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(chkPrintPhrases)
+                .addContainerGap(44, Short.MAX_VALUE))
         );
 
         txtTitle.setToolTipText("The title of your document");
@@ -240,7 +247,7 @@ public class ScrPrintToPDF extends JDialog {
                     .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(jLabel4)
-                        .addGap(0, 266, Short.MAX_VALUE))
+                        .addGap(0, 313, Short.MAX_VALUE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(txtSavePath)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -272,7 +279,7 @@ public class ScrPrintToPDF extends JDialog {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jButton1)
                     .addComponent(txtPgtFile, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 33, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(txtTitle, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(txtSubtitle, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -281,7 +288,7 @@ public class ScrPrintToPDF extends JDialog {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel4)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -378,6 +385,7 @@ public class ScrPrintToPDF extends JDialog {
         export.setPrintGrammar(chkGrammar.isSelected());
         export.setPrintWordEtymologies(chkEtymology.isSelected());
         export.setPrintAllConjugations(chkPrintConjugations.isSelected());
+        export.setPrintPhrases(chkPrintPhrases.isSelected());
         
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         try{
@@ -447,6 +455,7 @@ public class ScrPrintToPDF extends JDialog {
     private javax.swing.JCheckBox chkOrtho;
     private javax.swing.JCheckBox chkPageNum;
     private javax.swing.JCheckBox chkPrintConjugations;
+    private javax.swing.JCheckBox chkPrintPhrases;
     private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JPanel jPanel1;
