@@ -170,6 +170,12 @@ public class ExcelExport {
         } catch (Exception e) {
             ret.add("<ERROR>");
         }
+        
+        try {
+            ret.add(core.getRomManager().getPronunciation(conWord.getValue()));
+        } catch (Exception e) {
+            ret.add("<ERROR>");
+        }
 
         String classes = "";
         for (Entry<Integer, Integer> curEntry : conWord.getClassValues()) {
@@ -338,11 +344,12 @@ public class ExcelExport {
                     row.createCell(1).setCellValue(core.localLabel().toUpperCase() + " WORD");
                     row.createCell(2).setCellValue("PoS");
                     row.createCell(3).setCellValue("PRONUNCIATION");
-                    row.createCell(4).setCellValue("CLASS(ES)");
+                    row.createCell(4).setCellValue("ROMANIZATION");
+                    row.createCell(5).setCellValue("CLASS(ES)");
 
                     // create column for each declension
                     ConjugationPair[] conjList = core.getConjugationManager().getAllCombinedIds(type.getId());
-                    int colNum = 4;
+                    int colNum = 5;
                     for (ConjugationPair curDec : conjList) {
                         colNum++;
                         row.createCell(colNum).setCellValue(curDec.label.toUpperCase());

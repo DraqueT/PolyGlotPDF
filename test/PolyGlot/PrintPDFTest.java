@@ -42,35 +42,39 @@ public class PrintPDFTest {
 
     @Test
     public void testPrintGood() throws Exception {
-        cleanup();
-        String[] args = new String[]{
-            "pdf-export",
-            "test/TestResources/Lodenkur_TEST.pgd",
-            testPdfPath,
-            "Test Title Text",
-            "Test Subtitle Text",
-            "test/TestResources/EmptyImage.png",
-            "Test Forward Text",
-            "true",
-            "true",
-            "true",
-            "true",
-            "true",
-            "true",
-            "TRUE",
-            "True",
-            "test/TestResources/Kukun.ttf",
-            "X.XX"
-        };
-        
-        PolyGlot.main(args);
-        
-        String result = interceptor.getIntercepted();
+        try {
+            String[] args = new String[]{
+                "pdf-export",
+                "test/TestResources/Lodenkur_TEST.pgd",
+                testPdfPath,
+                "Test Title Text",
+                "Test Subtitle Text",
+                "test/TestResources/EmptyImage.png",
+                "Test Forward Text",
+                "true",
+                "true",
+                "true",
+                "true",
+                "true",
+                "true",
+                "TRUE",
+                "True",
+                "test/TestResources/Kukun.ttf",
+                "X.XX",
+                "true",
+                "test/TestResources/Kukun.ttf"
+            };
 
-        File f = new File(testPdfPath);
-        assert(f.exists());
-        assert(result.equals("SUCCESS"));
-        cleanup();
+            PolyGlot.main(args);
+
+            String result = interceptor.getIntercepted();
+
+            File f = new File(testPdfPath);
+            assert(f.exists());
+            assert(result.equals("SUCCESS"));
+        } finally {
+            cleanup();
+        }
     }
     
     @Test
@@ -154,7 +158,9 @@ public class PrintPDFTest {
             "TRUE",
             "True",
             "test/TestResources/Kukun.ttf",
-            "X.XX"
+            "X.XX",
+            "true",
+            "test/TestResources/Kukun.ttf"
         };
         
         PolyGlot.main(args);

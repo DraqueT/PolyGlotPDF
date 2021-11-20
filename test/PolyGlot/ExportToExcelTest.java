@@ -44,33 +44,35 @@ public class ExportToExcelTest {
     
     @Test
     public void testOutputGood() throws IOException {
-        cleanup();
-        System.out.println("Testing correct output");
-        
-        String[] args = {"export-to-excel",
-            sourceFile,
-            targetFile,
-            PGTUtil.TRUE
-        };
-        
-        OutputInterceptor output = new OutputInterceptor(System.out);
-        OutputInterceptor errors = new OutputInterceptor(System.err);
-        System.setOut(output);
-        System.setErr(errors);
-        
-        PolyGlot.main(args);
-        
-        String resultOut = output.getIntercepted();
-        String resultErr = errors.getIntercepted();
-        
-        File resultFile = new File(targetFile);
-        File expectedFile = new File(checkAgainst);
-        assert(resultErr.equals(""));
-        assert(resultOut.equals("SUCCESS"));
-        assert(resultFile.exists());
-        assert(expectedFile.exists());
-        assert(FileUtils.contentEquals(expectedFile, resultFile)); // this fails due to user change sometimes?
-        cleanup();
+        try {
+            System.out.println("Testing correct output");
+
+            String[] args = {"export-to-excel",
+                sourceFile,
+                targetFile,
+                PGTUtil.TRUE
+            };
+
+            OutputInterceptor output = new OutputInterceptor(System.out);
+            OutputInterceptor errors = new OutputInterceptor(System.err);
+            System.setOut(output);
+            System.setErr(errors);
+
+            PolyGlot.main(args);
+
+            String resultOut = output.getIntercepted();
+            String resultErr = errors.getIntercepted();
+
+            File resultFile = new File(targetFile);
+            File expectedFile = new File(checkAgainst);
+            assert(resultErr.equals(""));
+            assert(resultOut.equals("SUCCESS"));
+            assert(resultFile.exists());
+            assert(expectedFile.exists());
+            assert(FileUtils.contentEquals(expectedFile, resultFile)); // this fails due to user change sometimes?
+        } finally {
+            cleanup();
+        }
     }
     
     @Test
