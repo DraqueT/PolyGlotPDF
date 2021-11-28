@@ -166,7 +166,7 @@ public class PExportToPDF {
         document.setRenderer(defRender);
         ColumnDocumentRenderer dictRender = getColumnRender();
         PdfCanvas canvas = null;
-        
+
         // If font file still null, no custom font was loaded.
         if (conFontLocation.isEmpty()) {
             // If confont not specified, assume that the conlang requires unicode characters
@@ -174,7 +174,7 @@ public class PExportToPDF {
         } else {
             // iText has an exception class ALSO named IOException. That tricks the IDE. WHY YOU NAME SO BADLY.
             try {
-                conFont = PdfFontFactory.createFont(conFontLocation, PdfEncodings.IDENTITY_H, true);
+                conFont = getPdfFontFromLocation(conFontLocation);
             } catch (IOException e) {
                 try {
                     Font errorFont = Font.createFont(Font.TRUETYPE_FONT, new File(conFontLocation));
@@ -193,7 +193,7 @@ public class PExportToPDF {
         } else {
             // iText has an exception class ALSO named IOException. That tricks the IDE. WHY YOU NAME SO BADLY.
             try {
-                localFont = PdfFontFactory.createFont(localFontLocation, PdfEncodings.IDENTITY_H, true);
+                localFont = getPdfFontFromLocation(localFontLocation);
             } catch (IOException e) {
                 try {
                     Font errorFont = Font.createFont(Font.TRUETYPE_FONT, new File(localFontLocation));
@@ -252,7 +252,7 @@ public class PExportToPDF {
                 chapTitles.put(DICTLOC2CON, title);
                 chapList.add(new PEntry<>(null, DICTLOC2CON));
             }
-            
+
             if (printPhrases) {
                 chapTitles.put(PHRASES, "Phrasebook");
                 chapList.add(new PEntry<>(buildPhrases(PHRASES), PHRASES));
@@ -370,6 +370,26 @@ public class PExportToPDF {
         if (log.length() != 0) {
             System.out.println("WARNING: Problems with PDF generation:\n" + log);
         }
+    }
+    
+    /**
+     * Tries to load naked font. If it is incompatible, tries to convert. If this fails, give up.
+     * @param location
+     * @return
+     * @throws IOException 
+     */
+    private PdfFont getPdfFontFromLocation(String location) throws IOException {
+        PdfFont ret;
+        
+        try {
+            ret = PdfFontFactory.createFont(conFontLocation, PdfEncodings.IDENTITY_H, true);
+        } catch (IOException e) {
+            File tmpFont = File.createTempFile("PGT_TempFont", ".ttf");
+            PFontHandler.convertOtfToTtf(new File(conFontLocation), tmpFont);
+            ret = PdfFontFactory.createFont(location, PdfEncodings.IDENTITY_H, true);
+        }
+        
+        return ret;
     }
 
     /**
@@ -599,7 +619,7 @@ public class PExportToPDF {
         // add last letter section
         document.add(curLetterSec);
     }
-   
+
     /**
      * Builds dictionary chapter of Language Guide (lookup by localword)
      *
@@ -879,50 +899,49 @@ public class PExportToPDF {
         }
     }
 
-     private Div buildPhrases(String anchorPoint) throws IOException {
+    private Div buildPhrases(String anchorPoint) throws IOException {
         Div ret = new Div();
         ret.setProperty(Property.DESTINATION, anchorPoint);
-        
+
         for (PhraseNode node : core.getPhraseManager().getAllValues()) {
             Paragraph phraseBlock = new Paragraph();
             phraseBlock.setKeepTogether(true);
 
             // gloss
             phraseBlock.add(new Text("\n" + node.getGloss()).setFont(unicodeFontItalic).setFontSize(16));
-            
+
             //local phrase
             phraseBlock.add(new Text("\n").setFont(unicodeFont).setFontSize(2));
-            phraseBlock.add(new Text(core.localLabel() + " Phrase: " 
+            phraseBlock.add(new Text(core.localLabel() + " Phrase: "
                     + node.getLocalPhrase()).setFont(localFont).setFontSize(12));
-            
+
             // con phrase
             phraseBlock.add(new Text("\n").setFont(unicodeFont).setFontSize(2));
             phraseBlock.add(new Text(core.conLabel() + " Phrase: ").setFont(localFont)
                     .setFontSize(12));
             phraseBlock.add(new Text(node.getConPhrase()).setFont(conFont)
                     .setFontSize(conFontSize));
-            
+
             // pronunciation
             if (!node.getPronunciation().isEmpty()) {
                 phraseBlock.add(new Text("\n").setFont(unicodeFont).setFontSize(2));
-                phraseBlock.add(new Text("Pronunciation: " 
-                    + node.getPronunciation()).setFont(localFont).setFontSize(12));
+                phraseBlock.add(new Text("Pronunciation: "
+                        + node.getPronunciation()).setFont(localFont).setFontSize(12));
             }
-            
+
             // notes
             if (!node.getNotes().isEmpty()) {
                 phraseBlock.add(new Text("\n").setFont(unicodeFont).setFontSize(2));
-                phraseBlock.add(new Text("Notes: " 
-                    + node.getNotes()).setFont(localFont).setFontSize(12));
+                phraseBlock.add(new Text("Notes: "
+                        + node.getNotes()).setFont(localFont).setFontSize(12));
             }
-            
+
             ret.add(phraseBlock);
         }
-        
+
         return ret;
     }
 
-    
     /**
      * Builds chapter on Grammar
      *
@@ -1172,7 +1191,7 @@ public class PExportToPDF {
     public void setLocalFontLocation(String _localFontLocation) {
         localFontLocation = _localFontLocation;
     }
-    
+
     /**
      * This is code that allows for easily adding page numbers.
      */

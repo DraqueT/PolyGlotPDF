@@ -41,7 +41,7 @@ public class PrintPDFTest {
     }
 
     @Test
-    public void testPrintGood() throws Exception {
+    public void testPrintGood() {
         try {
             String[] args = new String[]{
                 "pdf-export",
@@ -72,6 +72,8 @@ public class PrintPDFTest {
             File f = new File(testPdfPath);
             assert(f.exists());
             assert(result.equals("SUCCESS"));
+        } catch (Exception e) {
+            e.printStackTrace();
         } finally {
             cleanup();
         }

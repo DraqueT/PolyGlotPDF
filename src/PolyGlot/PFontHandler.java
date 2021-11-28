@@ -34,6 +34,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 import javax.swing.JLabel;
+import org.apache.commons.io.FileUtils;
+import org.mabb.fontverter.FVFont;
+import org.mabb.fontverter.FontVerter;
 
 /**
  * Split out from IOHandler due to large portion devoted to handling fonts
@@ -362,5 +365,11 @@ public class PFontHandler {
      */
     private Font getMenuFontInternal() throws IOException {
         return new JLabel().getFont();
+    }
+    
+    public static void convertOtfToTtf(File source, File target) throws IOException {
+        FVFont sourceFont = FontVerter.readFont(source);
+        FVFont targetFont = FontVerter.convertFont(sourceFont, FontVerter.FontFormat.TTF);
+        FileUtils.writeByteArrayToFile(target, targetFont.getData());
     }
 }
