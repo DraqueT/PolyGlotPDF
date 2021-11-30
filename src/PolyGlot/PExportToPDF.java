@@ -79,6 +79,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringEscapeUtils;
 
 /**
@@ -371,16 +372,18 @@ public class PExportToPDF {
             System.out.println("WARNING: Problems with PDF generation:\n" + log);
         }
     }
-    
+
     /**
-     * Tries to load naked font. If it is incompatible, tries to convert. If this fails, give up.
+     * Tries to load naked font. If it is incompatible, tries to convert. If
+     * this fails, give up.
+     *
      * @param location
      * @return
-     * @throws IOException 
+     * @throws IOException
      */
     private PdfFont getPdfFontFromLocation(String location) throws IOException {
         PdfFont ret;
-        
+
         try {
             ret = PdfFontFactory.createFont(conFontLocation, PdfEncodings.IDENTITY_H, true);
         } catch (IOException e) {
@@ -388,7 +391,7 @@ public class PExportToPDF {
             PFontHandler.convertOtfToTtf(new File(conFontLocation), tmpFont);
             ret = PdfFontFactory.createFont(location, PdfEncodings.IDENTITY_H, true);
         }
-        
+
         return ret;
     }
 
@@ -491,57 +494,7 @@ public class PExportToPDF {
                 // IOHandler.writeErrorLog(e);
             }
 
-            // adds values 
-            if (!curWord.getClassValues().isEmpty()) {
-                String wordClasses = "";
-                for (Entry<Integer, Integer> curEntry : curWord.getClassValues()) {
-                    WordClass prop;
-                    WordClassValue value;
-
-                    try {
-                        prop = (WordClass) core.getWordClassCollection()
-                                .getNodeById(curEntry.getKey());
-                        value = prop.getValueById(curEntry.getValue());
-                    } catch (Exception e) {
-                        log += "\nProblem printing classes for word (" + curWord.getValue()
-                                + "): " + e.getLocalizedMessage();
-                        continue;
-                    }
-
-                    if (wordClasses.length() != 0) {
-                        wordClasses += ", ";
-                    }
-
-                    wordClasses += value.getValue();
-                }
-                varChunk = new Text(wordClasses);
-                varChunk.setFont(localFont);
-                dictEntry.add(varChunk.setFontSize(defFontSize));
-
-                varChunk = new Text(" - ");
-                varChunk.setFont(unicodeFont);
-                dictEntry.add(varChunk.setFontSize(defFontSize));
-            }
-
-            if (!curWord.getClassTextValues().isEmpty()) {
-                varChunk = null;
-
-                for (Entry<Integer, String> curEntry : curWord.getClassTextValues()) {
-                    if (varChunk != null) {
-                        dictEntry.add(new Text(", "));
-                    }
-
-                    WordClass prop = (WordClass) core.getWordClassCollection().getNodeById(curEntry.getKey());
-                    varChunk = new Text(prop.getValue());
-                    varChunk.setFont(unicodeFontItalic);
-                    dictEntry.add(varChunk);
-                    varChunk = new Text(" : " + curEntry.getValue());
-                    varChunk.setFont(localFont);
-                    dictEntry.add(varChunk);
-                }
-
-                dictEntry.add(new Text(" - "));
-            }
+            addWordClassValues(curWord, dictEntry);
 
             // write romanization value for word if active and word has one
             if (core.getRomManager().isEnabled()) {
@@ -618,6 +571,86 @@ public class PExportToPDF {
 
         // add last letter section
         document.add(curLetterSec);
+    }
+
+    private void addWordClassValues(ConWord curWord, Paragraph dictEntry) {
+        Text varChunk;
+
+        if (!curWord.getClassValues().isEmpty()) {
+            //String wordClasses = "";
+            List<String> assocValues = new ArrayList<>();
+            List<String> classValues = new ArrayList<>();
+            for (Entry<Integer, Integer> curEntry : curWord.getClassValues()) {
+                String value;
+
+                try {
+                    WordClass prop = (WordClass) core.getWordClassCollection()
+                            .getNodeById(curEntry.getKey());
+
+                    if (prop.isAssociative()) {
+                        assocValues.add(prop.getValue());
+                        assocValues.add(core.getWordCollection().getNodeById(curEntry.getValue()).getValue());
+                    } else {
+                        classValues.add(prop.getValueById(curEntry.getValue()).getValue());
+                    }
+                } catch (Exception e) {
+                    log += "\nProblem printing classes for word (" + curWord.getValue()
+                            + "): " + e.getLocalizedMessage();
+                    continue;
+                }
+            }
+
+            if (classValues.size() > 0) {
+                String wordClasses = classValues.stream().collect(Collectors.joining(", "));
+
+                varChunk = new Text(wordClasses);
+                varChunk.setFont(localFont);
+                dictEntry.add(varChunk.setFontSize(defFontSize));
+                varChunk = new Text("\n");
+                varChunk.setFont(localFont);
+                dictEntry.add(varChunk.setFontSize(defFontSize));
+            }
+
+            if (assocValues.size() > 0) {
+                for (int i = 0; i < assocValues.size(); i += 2) {
+                    varChunk = new Text("\n" + assocValues.get(i) + ": ");
+                    varChunk.setFont(localFont);
+                    dictEntry.add(varChunk);
+
+                    varChunk = new Text(assocValues.get(i + 1));
+                    varChunk.setFont(conFont);
+                    dictEntry.add(varChunk);
+                }
+            }
+
+            varChunk = new Text("\n");
+            varChunk.setFont(unicodeFont);
+            dictEntry.add(varChunk.setFontSize(defFontSize));
+        }
+
+        if (!curWord.getClassTextValues().isEmpty()) {
+            varChunk = null;
+
+            for (Entry<Integer, String> curEntry : curWord.getClassTextValues()) {
+                if (varChunk != null) {
+                    dictEntry.add(new Text(", "));
+                }
+
+                if (curEntry.getValue().trim().isEmpty()) {
+                    continue;
+                }
+
+                WordClass prop = (WordClass) core.getWordClassCollection().getNodeById(curEntry.getKey());
+                varChunk = new Text(prop.getValue());
+                varChunk.setFont(unicodeFontItalic);
+                dictEntry.add(varChunk);
+                varChunk = new Text(" : " + curEntry.getValue());
+                varChunk.setFont(localFont);
+                dictEntry.add(varChunk);
+            }
+
+            dictEntry.add(new Text("\n"));
+        }
     }
 
     /**
@@ -703,54 +736,7 @@ public class PExportToPDF {
                 // IOHandler.writeErrorLog(e);
             }
 
-            // adds values 
-            if (!curWord.getClassValues().isEmpty()) {
-                String wordClasses = "";
-                for (Entry<Integer, Integer> curEntry : curWord.getClassValues()) {
-                    WordClass prop;
-                    WordClassValue value;
-
-                    try {
-                        prop = (WordClass) core.getWordClassCollection()
-                                .getNodeById(curEntry.getKey());
-                        value = prop.getValueById(curEntry.getValue());
-                    } catch (Exception e) {
-                        log += "\nProblem printing classes for word: " + curWord.getValue();
-                        continue;
-                    }
-
-                    if (wordClasses.length() != 0) {
-                        wordClasses += ", ";
-                    }
-
-                    wordClasses += value.getValue();
-                }
-                varChunk = new Text(wordClasses);
-                varChunk.setFont(localFont);
-                dictEntry.add(varChunk.setFontSize(defFontSize));
-
-                varChunk = new Text(" - ");
-                varChunk.setFont(timesBold);
-                dictEntry.add(varChunk.setFontSize(defFontSize));
-            }
-
-            if (!curWord.getClassTextValues().isEmpty()) {
-                varChunk = null;
-
-                for (Entry<Integer, String> curEntry : curWord.getClassTextValues()) {
-                    if (varChunk != null) {
-                        dictEntry.add(new Text(", "));
-                    }
-
-                    WordClass prop = (WordClass) core.getWordClassCollection().getNodeById(curEntry.getKey());
-                    varChunk = new Text(prop.getValue());
-                    varChunk.setFont(unicodeFontItalic);
-                    dictEntry.add(varChunk);
-                    varChunk = new Text(" : " + curEntry.getValue());
-                    varChunk.setFont(localFont);
-                    dictEntry.add(varChunk);
-                }
-            }
+            this.addWordClassValues(curWord, dictEntry);
 
             // write romanization value for word if active and word has one
             if (core.getRomManager().isEnabled()) {
