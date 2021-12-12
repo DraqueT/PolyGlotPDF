@@ -76,7 +76,7 @@ public class PolyGlot {
     private static String pdfExport(String[] args) {
         String ret;
 
-        if (args.length == 19) {
+        if (args.length == 20) {
             String readFrom = args[1];
             String writeTo = args[2];
             
@@ -102,6 +102,7 @@ public class PolyGlot {
                     pdf.setPrintVersion(args[16]);
                     pdf.setPrintPhrases(args[17].toUpperCase().equals(PGTUtil.TRUE));
                     pdf.setLocalFontLocation(args[18]);
+                    pdf.setChapterOrder(args[19]);
 
                     pdf.print();
 

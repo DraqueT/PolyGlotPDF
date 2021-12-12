@@ -386,6 +386,7 @@ public class ScrPrintToPDF extends JDialog {
         export.setPrintWordEtymologies(chkEtymology.isSelected());
         export.setPrintAllConjugations(chkPrintConjugations.isSelected());
         export.setPrintPhrases(chkPrintPhrases.isSelected());
+        export.setChapterOrder("0,1,2,3,4,5");
         
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         try{

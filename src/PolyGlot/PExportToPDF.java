@@ -133,6 +133,7 @@ public class PExportToPDF {
     private String printVersion = "";
     private String conFontLocation = "";
     private String localFontLocation = "";
+    private int[] chapOrder;
 
     /**
      * Exports language to presentable PDF
@@ -188,6 +189,7 @@ public class PExportToPDF {
 
             }
         }
+
         if (localFontLocation.isEmpty()) {
             // If confont not specified, assume that the conlang requires unicode characters
             localFont = unicodeFont;
@@ -224,44 +226,61 @@ public class PExportToPDF {
                 chapTitles.put(FOREWORD, "Author Foreword");
                 chapList.add(new PEntry<>(buildForward(FOREWORD), FOREWORD));
             }
-            if (printOrtho) {
-                chapTitles.put(ORTHOGRAPHY, "Orthography");
-                chapList.add(new PEntry<>(buildOrthography(ORTHOGRAPHY), ORTHOGRAPHY));
-            }
-            if (printGlossKey) {
-                chapTitles.put(GLOSSKEY, "Gloss Key");
-                chapList.add(new PEntry<>(buildGlossKey(GLOSSKEY), GLOSSKEY));
-            }
 
-            if (printConLocal) {
-                String title = "Dictionary: ";
-                title += core.conLabel();
+            for (int chap : chapOrder) {
+                switch (chap) {
+                    case PGTUtil.CHAP_CONTOLOCAL:
+                        if (printConLocal) {
+                            String title = "Dictionary: ";
+                            title += core.conLabel();
 
-                title += " to ";
+                            title += " to ";
 
-                title += core.localLabel();
+                            title += core.localLabel();
 
-                chapTitles.put(DICTCON2LOC, title);
-                chapList.add(new PEntry<>(null, DICTCON2LOC));
-            }
-            if (printLocalCon) {
-                String title = "Dictionary: ";
-                title += core.localLabel();
-                title += " to ";
-                title += core.conLabel();
+                            chapTitles.put(DICTCON2LOC, title);
+                            chapList.add(new PEntry<>(null, DICTCON2LOC));
+                        }
+                        break;
+                    case PGTUtil.CHAP_GLOSSKEY:
+                        if (printGlossKey) {
+                            chapTitles.put(GLOSSKEY, "Gloss Key");
+                            chapList.add(new PEntry<>(buildGlossKey(GLOSSKEY), GLOSSKEY));
+                        }
+                        break;
+                    case PGTUtil.CHAP_GRAMMAR:
+                        if (printGrammar) {
+                            chapTitles.put(GRAMMAR, "Grammar");
+                            chapList.add(new PEntry<>(buildGrammar(GRAMMAR), GRAMMAR));
+                        }
+                        break;
+                    case PGTUtil.CHAP_LOCALTOCON:
+                        if (printLocalCon) {
+                            String title = "Dictionary: ";
+                            title += core.localLabel();
+                            title += " to ";
+                            title += core.conLabel();
 
-                chapTitles.put(DICTLOC2CON, title);
-                chapList.add(new PEntry<>(null, DICTLOC2CON));
-            }
-
-            if (printPhrases) {
-                chapTitles.put(PHRASES, "Phrasebook");
-                chapList.add(new PEntry<>(buildPhrases(PHRASES), PHRASES));
-            }
-
-            if (printGrammar) {
-                chapTitles.put(GRAMMAR, "Grammar");
-                chapList.add(new PEntry<>(buildGrammar(GRAMMAR), GRAMMAR));
+                            chapTitles.put(DICTLOC2CON, title);
+                            chapList.add(new PEntry<>(null, DICTLOC2CON));
+                        }
+                        break;
+                    case PGTUtil.CHAP_ORTHOGRAPHY:
+                        if (printOrtho) {
+                            chapTitles.put(ORTHOGRAPHY, "Orthography");
+                            chapList.add(new PEntry<>(buildOrthography(ORTHOGRAPHY), ORTHOGRAPHY));
+                        }
+                        break;
+                    case PGTUtil.CHAP_PHRASEBOOK:
+                        if (printPhrases) {
+                            chapTitles.put(PHRASES, "Phrasebook");
+                            chapList.add(new PEntry<>(buildPhrases(PHRASES), PHRASES));
+                        }
+                        break;
+                    default:
+                        log += "Unrecognized chapter key: " + chap + "\n";
+                        break;
+                }
             }
 
             // build table of contents
@@ -370,6 +389,15 @@ public class PExportToPDF {
         // inform user of errors
         if (log.length() != 0) {
             System.out.println("WARNING: Problems with PDF generation:\n" + log);
+        }
+    }
+
+    public void setChapterOrder(String chapterString) {
+        String[] chapOrderStr = chapterString.split(",");
+        chapOrder = new int[chapOrderStr.length];
+
+        for (int i = 0; i < chapOrderStr.length; i++) {
+            chapOrder[i] = Integer.parseInt(chapOrderStr[i]);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020, Draque Thompson, draquemail@gmail.com
+ * Copyright (c) 2019-2021, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
  * Licensed under: Creative Commons Attribution-NonCommercial 4.0 International Public License
@@ -62,7 +62,8 @@ public class PrintPDFTest {
                 "test/TestResources/Kukun.ttf",
                 "X.XX",
                 "t",
-                "test/TestResources/Kukun.ttf"
+                "test/TestResources/Kukun.ttf",
+                "0,1,2,3,4,5"
             };
 
             PolyGlot.main(args);
@@ -100,7 +101,8 @@ public class PrintPDFTest {
             "True",
             "BLOO",
             "test/TestResources/Kukun.ttf",
-            "X.XX"
+            "X.XX",
+            "ZIM ZAM MBAM!"
         };
         
         PolyGlot.main(args);
@@ -162,7 +164,8 @@ public class PrintPDFTest {
             "test/TestResources/Kukun.ttf",
             "X.XX",
             "true",
-            "test/TestResources/Kukun.ttf"
+            "test/TestResources/Kukun.ttf",
+            "0,1,2,3,4,5,6"
         };
         
         PolyGlot.main(args);
