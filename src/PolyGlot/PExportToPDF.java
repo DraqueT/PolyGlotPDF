@@ -292,6 +292,7 @@ public class PExportToPDF {
             chapList.forEach((curChap) -> {
                 Link link = new Link(chapTitles.get((String) curChap.getValue()),
                         PdfAction.createGoTo((String) curChap.getValue()));
+                link.setFont(localFont);
                 ToC.add(new Paragraph(link).add("\n").add(" "));
                 // create subheadings for grammar chapter
                 if (curChap.getValue().equals(GRAMMAR)) {
