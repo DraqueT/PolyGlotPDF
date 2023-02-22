@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2021, Draque Thompson, draquemail@gmail.com
+ * Copyright (c) 2014-2023, Draque Thompson, draquemail@gmail.com
  * All rights reserved.
  *
  * Licensed under: MIT Licence
@@ -250,7 +250,7 @@ public final class CustHandlerFactory {
                     blocalWord = true;
                 } else if (qName.equalsIgnoreCase(PGTUtil.CONWORD_XID)) {
                     bconWord = true;
-                } else if (qName.equalsIgnoreCase(PGTUtil.WORD_POS_ID_XID)) {
+                } else if (qName.equalsIgnoreCase(PGTUtil.WORD_POS_ID_XID) || qName.equalsIgnoreCase(PGTUtil.WORD_POS_ID_XID_LEGACY)) {
                     btypeId = true;
                 } else if (qName.equalsIgnoreCase(PGTUtil.WORD_ID_XID)) {
                     bId = true;
@@ -268,13 +268,13 @@ public final class CustHandlerFactory {
                     bfontcon = true;
                 } else if (qName.equalsIgnoreCase(PGTUtil.FONT_LOCAL_XID)) {
                     bfontlocal = true;
-                } else if (qName.equalsIgnoreCase(PGTUtil.POS_ID_XID)) {
+                } else if (qName.equalsIgnoreCase(PGTUtil.POS_ID_XID) || qName.equalsIgnoreCase(PGTUtil.POS_ID_XID_LEGACY)) {
                     bwordClassId = true;
-                } else if (qName.equalsIgnoreCase(PGTUtil.POS_NAME_XID)) {
+                } else if (qName.equalsIgnoreCase(PGTUtil.POS_NAME_XID) || qName.equalsIgnoreCase(PGTUtil.POS_NAME_XID_LEGACY)) {
                     bwordClassName = true;
-                } else if (qName.equalsIgnoreCase(PGTUtil.POS_NOTES_XID)) {
+                } else if (qName.equalsIgnoreCase(PGTUtil.POS_NOTES_XID) || qName.equalsIgnoreCase(PGTUtil.POS_NOTES_XID_LEGACY)) {
                     bwordClassNotes = true;
-                } else if (qName.equalsIgnoreCase(PGTUtil.POS_GLOSS_XID)) {
+                } else if (qName.equalsIgnoreCase(PGTUtil.POS_GLOSS_XID) || qName.equalsIgnoreCase(PGTUtil.POS_GLOSS_XID_LEGACY)) {
                     bwordClassGloss = true;
                 } else if (qName.equalsIgnoreCase(PGTUtil.WORD_PROC_XID)) {
                     bpronuncation = true;
@@ -328,11 +328,11 @@ public final class CustHandlerFactory {
                     bromPhon = true;
                 } else if (qName.equalsIgnoreCase(PGTUtil.WORD_PROCOVERRIDE_XID)) {
                     bwordProcOverride = true;
-                } else if (qName.equalsIgnoreCase(PGTUtil.POS_PROC_MAN_XID)) {
+                } else if (qName.equalsIgnoreCase(PGTUtil.POS_PROC_MAN_XID) || qName.equalsIgnoreCase(PGTUtil.POS_PROC_MAN_XID_LEGACY)) {
                     bwordClassProcMan = true;
-                } else if (qName.equalsIgnoreCase(PGTUtil.POS_DEF_MAN_XID)) {
+                } else if (qName.equalsIgnoreCase(PGTUtil.POS_DEF_MAN_XID) || qName.equalsIgnoreCase(PGTUtil.POS_DEF_MAN_XID_LEGACY)) {
                     bwordClassDefMan = true;
-                } else if (qName.equalsIgnoreCase(PGTUtil.POS_PATTERN_XID)) {
+                } else if (qName.equalsIgnoreCase(PGTUtil.POS_PATTERN_XID) || qName.equalsIgnoreCase(PGTUtil.POS_PATTERN_XID_LEGACY)) {
                     bwordClassPattern = true;
                 } else if (qName.equalsIgnoreCase(PGTUtil.LANG_PROP_LOCAL_UNIQUE_XID)) {
                     blangPropLocalUniqueness = true;
@@ -536,7 +536,7 @@ public final class CustHandlerFactory {
                     blocalWord = false;
                 } else if (qName.equalsIgnoreCase(PGTUtil.CONWORD_XID)) {
                     bconWord = false;
-                } else if (qName.equalsIgnoreCase(PGTUtil.WORD_POS_ID_XID)) {
+                } else if (qName.equalsIgnoreCase(PGTUtil.WORD_POS_ID_XID) || qName.equalsIgnoreCase(PGTUtil.WORD_POS_ID_XID_LEGACY)) {
                     btypeId = false;
                 } else if (qName.equalsIgnoreCase(PGTUtil.WORD_ID_XID)) {
                     bId = false;
@@ -571,9 +571,9 @@ public final class CustHandlerFactory {
                     bfontcon = false;
                 } else if (qName.equalsIgnoreCase(PGTUtil.FONT_LOCAL_XID)) {
                     bfontlocal = false;
-                } else if (qName.equalsIgnoreCase(PGTUtil.POS_NAME_XID)) {
+                } else if (qName.equalsIgnoreCase(PGTUtil.POS_NAME_XID) || qName.equalsIgnoreCase(PGTUtil.POS_NAME_XID_LEGACY)) {
                     bwordClassName = false;
-                } else if (qName.equalsIgnoreCase(PGTUtil.POS_NOTES_XID)) {
+                } else if (qName.equalsIgnoreCase(PGTUtil.POS_NOTES_XID) || qName.equalsIgnoreCase(PGTUtil.POS_NOTES_XID_LEGACY)) {
                     TypeNode node = core.getTypes().getBufferType();
                     try {
                         node.setNotes(WebInterface.unarchiveHTML(node.getNotes(), core));
@@ -582,13 +582,13 @@ public final class CustHandlerFactory {
                         warningLog += "\nProblem loading part of speech note image: " + e.getLocalizedMessage();
                     }
                     bwordClassNotes = false;
-                } else if (qName.equalsIgnoreCase(PGTUtil.POS_PROC_MAN_XID)) {
+                } else if (qName.equalsIgnoreCase(PGTUtil.POS_PROC_MAN_XID) || qName.equalsIgnoreCase(PGTUtil.POS_PROC_MAN_XID_LEGACY)) {
                     bwordClassProcMan = false;
-                } else if (qName.equalsIgnoreCase(PGTUtil.POS_DEF_MAN_XID)) {
+                } else if (qName.equalsIgnoreCase(PGTUtil.POS_DEF_MAN_XID) || qName.equalsIgnoreCase(PGTUtil.POS_DEF_MAN_XID)) {
                     bwordClassDefMan = false;
-                } else if (qName.equalsIgnoreCase(PGTUtil.POS_PATTERN_XID)) {
+                } else if (qName.equalsIgnoreCase(PGTUtil.POS_PATTERN_XID) || qName.equalsIgnoreCase(PGTUtil.POS_PATTERN_XID_LEGACY)) {
                     bwordClassPattern = false;
-                } else if (qName.equalsIgnoreCase(PGTUtil.POS_GLOSS_XID)) {
+                } else if (qName.equalsIgnoreCase(PGTUtil.POS_GLOSS_XID) || qName.equalsIgnoreCase(PGTUtil.POS_GLOSS_XID_LEGACY)) {
                     bwordClassGloss = false;
                 } else if (qName.equalsIgnoreCase(PGTUtil.WORD_PROC_XID)) {
                     bpronuncation = false;

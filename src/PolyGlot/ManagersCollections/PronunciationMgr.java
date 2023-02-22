@@ -317,7 +317,7 @@ public class PronunciationMgr {
      * @param rootElement root element of document
      */
     public void writeXML(Document doc, Element rootElement) {
-        Element collection = doc.createElement(PGTUtil.ETYMOLOGY_COLLECTION_XID);
+        Element collection = doc.createElement(PGTUtil.PRONUNCIATION_COLLECTION_XID);
         
         rootElement.appendChild(collection);
         
