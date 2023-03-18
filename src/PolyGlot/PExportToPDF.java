@@ -1082,6 +1082,16 @@ public class PExportToPDF {
 
         if (coverImagePath.length() != 0) {
             Image img = new Image(ImageDataFactory.create(coverImagePath));
+            
+            PdfDocument pdfDoc = document.getPdfDocument();
+            PageSize pageSize = pdfDoc.getDefaultPageSize();
+            float availableWidth = pageSize.getRight() - (document.getLeftMargin() * 2);
+            
+            
+            if (img.getImageWidth() > availableWidth) {
+                img.setWidth(availableWidth);
+            }
+            
             ret.add(img);
             ret.add("\n");
             ret.add("\n");

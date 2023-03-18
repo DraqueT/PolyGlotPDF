@@ -30,7 +30,6 @@ import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -48,14 +47,8 @@ public class ScrPrintToPDF extends JDialog {
     public ScrPrintToPDF() {
         initComponents();     
         
-        try {
-            core = new DictCore();
-        } catch(IOException e) {
-            System.out.print("ME BAD: " + e.getLocalizedMessage());
-        }
-        
-        chkConLocal.setText("Print " + core.conLabel() + " -> " + core.localLabel() + " Dictionary");
-        chkLocalCon.setText("Print " + core.localLabel() + " -> " + core.conLabel() + " Dictionary");
+        chkConLocal.setText("Print Conlang -> Local Dictionary");
+        chkLocalCon.setText("Print Local -> Conlang Dictionary");
         
         setModal(true);
     }
@@ -355,10 +348,11 @@ public class ScrPrintToPDF extends JDialog {
     }//GEN-LAST:event_btnCancelActionPerformed
 
     private void btnPrintActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPrintActionPerformed
-        
+
         PExportToPDF export;
         
         try {
+            core = new DictCore();
             core.readFile(txtPgtFile.getText());
         } catch (IOException | IllegalStateException | FontFormatException e) {
             System.out.println("ERROR: " + e.getLocalizedMessage());
